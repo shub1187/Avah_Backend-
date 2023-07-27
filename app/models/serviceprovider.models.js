@@ -1,24 +1,64 @@
 const sql = require("../config/db.config");
 
+const {Client} = require('pg');
+
+const client =  new Client ({
+    host: "localhost",
+    port: 5432,  
+    user: "postgres",
+    password: "Ertiga@2324",
+    database: "avah"
+})
+client.connect ();
+
 module.exports = {
+
+  // Pre Registeration of Service Provider / Dealer from Register page
+  register: async (req, callback) => {
+    try {
+      var body = req.body
+      const query = 'INSERT INTO pending_request_sp_dealer (name, email, business_name, business_type, document, password,approval_status,role,business_contact,sp_status,business_address) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *';
+      const values = [body.name, body.email, body.business_name, body.business_type, body.document, body.password,body.approval_status,body.role,body.business_contact,body.sp_status,body.business_address];
+      
+      const data = await new Promise((resolve) => {
+        client.query(query, values, (err, result) => {
+          if (err) {
+            console.error('Error registering user:', err);
+            return callback(true, 'Service Provider Registration failed');
+          }
+          console.log('Service Provider registered successfully!');
+          return callback(false, result.rows);
+        });
+      });
+    } catch (error) {
+      console.error('Error registering user:', error);
+      return callback(true, error.message);
+    }
+  }
+  ,  // Pre Registeration of Service Provider / Dealer ends
+
   login: async (req, callback) => {
     try {
-      const data = await new Promise((resolve) => {
-        sql.query(
-          "SELECT * FROM service_providers where email=? AND password=?",
-          [req.body.email, req.body.password],
-          (err, sqlResult) => {
-            resolve(sqlResult);
-          }
-        );
-      });
-      console.log(data)
-      if (data && data.length > 0) {
-        return callback(false, data[0]);
-      } else {
-        return callback(true, "No data found");
-      }
+      const login_query = {text: 'SELECT * FROM approved_service_providers WHERE email = $1 AND password = $2 AND role = $3',
+      values: [req.body.email, req.body.password, req.body.role]}
+        const data = await new Promise((resolve) => {
+          client.query(
+            login_query, 
+            (err,result)=>{
+            if (result.rows.length==1 && result.rows[0].sp_status == 'active' ) {  // Login successfull for active service provider
+              return callback(false, result);
+            } 
+            else if(result.rows.length==1 && result.rows[0].sp_status == 'inactive') {
+              return callback(true,"Sorry you cannot login you have been disabled by the Admin")    
+            }
+            else if (result.rows.length == 0) {
+              return callback(true, "Kindly Enter Correct Credentials");
+            }
+          } 
+          );
+        });
     } catch (e) {
+      console.log("ln 59", e.message)
       callback(true, e);
     }
   },

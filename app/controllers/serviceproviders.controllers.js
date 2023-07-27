@@ -1,4 +1,5 @@
 const {
+    register,
     login,
     getAllUsers,
     createUser,
@@ -39,6 +40,24 @@ const {
 } = require("jsonwebtoken");
 
 module.exports = {
+    // Registeration
+    register: (req, res) => {
+        register(req, (err, results) => {
+            if (err)
+                res.status(500).send({
+                    error: true,
+                    message: results || "Something Went wrong. Please try again later",
+                });
+            else {
+                console.log("sp controller ln 52",results)
+                res.send({
+                    error: false,
+                    message: "Registeration successfull"
+                });
+            }
+        });
+    },//
+
     login: (req, res) => {
         login(req, (err, results) => {
             if (err)
@@ -60,6 +79,8 @@ module.exports = {
                     message: "success",
                     data: results,
                     token: jsontoken,
+                    role: results.rows[0].role,
+                    TYPE_OF_USER : 2 // for service provider dashboard.
                 });
             }
         });

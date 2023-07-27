@@ -1,4 +1,7 @@
 const {
+  deleteServiceProvider,
+  spRequest, // pending request for approval from admin
+  approveServiceProvider, // approvals of service providers and dealers by admin
   getAllUsers,
   createUser,
   getUserById,
@@ -70,6 +73,7 @@ module.exports = {
           message: results || "Something Went wrong. Please try again later",
         });
       else {
+        console.log("This is result id ln 73 from models",results.id) // 
         const toCreateToken = {
           id: results.id,
           role: "admin",
@@ -87,6 +91,42 @@ module.exports = {
       }
     });
   },
+
+  spRequest: (req, res) => {
+    spRequest(req, (err, results) => {
+      if (err)
+        res.status(500).send({
+          error: true,
+          message: results || "Something Went wrong. Please try again later",
+        });
+      else {
+        console.log("ln 102 from admin controller",results)
+        res.send({
+          error: false,
+          message: "success",
+          data: results,     
+        });
+      }
+    });
+  },
+
+
+  approveServiceProvider: (req,res)=>{
+    approveServiceProvider(req, (err,results)=>{
+      if (err)
+        res.status(500).send({
+          error: true,
+          message: results || "Something Went wrong. Please try again later",
+        });
+      else
+        res.send({
+          error: false,
+          message: "Service Provider added to system successfully",
+          // data: results,
+        });
+    });
+  },
+
 
   getAllUsers: (req, res) => {
     getAllUsers(req, (err, results) => {
@@ -224,6 +264,7 @@ module.exports = {
           message: results || "Something Went wrong. Please try again later",
         });
       else
+      console.log("ln 265 from admin controller",results)
         res.send({
           error: false,
           message: "success",

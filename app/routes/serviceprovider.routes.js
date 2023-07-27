@@ -1,4 +1,5 @@
 const {
+    register,
     login,
     getAllUsers,
     createUser,
@@ -118,6 +119,9 @@ router.post("/login", login);
  *             schema:
  *               $ref: '#/components/schemas/Book'
  */
+
+// Registeration Router
+router.post("/registerServiceProvider",register)
 
 router.get("/getAllUsers", checkToken, getAllUsers);
 router.post("/createUser", checkToken, createUser);

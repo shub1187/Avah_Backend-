@@ -1,4 +1,6 @@
 const {
+  spRequest,
+  approveServiceProvider,
   getAllUsers,
   createUser,
   getUserById,
@@ -62,6 +64,7 @@ const {
 const router = require("express").Router();
 const { checkToken } = require("../middlewares/auth_validation");
 
+
 //common
 router.post("/login", login);
 
@@ -78,7 +81,9 @@ router.post("/updatePassword", checkToken, updatePassword);
 router.post("/updateUserActive", checkToken, updateUserActive);
 
 //serviceprovider
-router.get("/getAllServiceProviders", checkToken, getAllServiceProviders);
+router.get("/spRequest",checkToken,spRequest) // Added by shubham need to add checkToken once integrated
+router.post("/approveServiceProvider",checkToken, approveServiceProvider); //Added by shubham need to add checkToken once integrated
+router.get("/getAllServiceProviders", checkToken, getAllServiceProviders); // checking shub to get data from approved service providers
 router.post("/createServiceProvider", checkToken, createServiceProvider);
 router.post("/getServiceProviderById", checkToken, getServiceProviderById);
 router.get("/getServiceProviderSearch", checkToken, getServiceProviderSearch);
@@ -90,7 +95,7 @@ router.post(
 );
 router.post(
   "/updateServiceProviderActive",
-  checkToken,
+  checkToken,      // we need it while testing on postman shub commented it out
   updateServiceProviderActive
 );
 router.post(

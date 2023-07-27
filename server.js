@@ -14,12 +14,6 @@ app.use(bodyParser.json());
 // parse requests of content-type - application/x-www-form-urlencoded
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// simple route
-app.get("/update", (req, res) => {
-  res.json({ message: "Welcome to sample application." });
-});
-
-app.get("/all",dbEmp.getEmployees)
 
 app.use("/api/admin", adminRouter);
 app.use("/api/serviceprovider", serviceProviderRouter);
