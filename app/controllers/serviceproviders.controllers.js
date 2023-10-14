@@ -3,13 +3,17 @@ const {
     login,
     getAllUsers,
     createUser,
+    createAppointment,
+    getAllModelPerBrand,
     getUserById,
     updateUserDetail,
     deleteUser,
     getUserSearch,
     updateUserActive,
     updateUserPassword,
+    getAllTechnicianEmployee,
     getAllEmployee,
+    getAllAppointment,
     createEmployee,
     getEmployeeById,
     updateEmployeeDetail,
@@ -33,7 +37,9 @@ const {
     deleteLabour,
     getLabourSearch,
     createEstimate,
-    getAllEstimate
+    getAllEstimate,
+    spApprovalOfCustAppointment,
+    getAllPendingAppointment
 } = require("../models/serviceprovider.models.js");
 const {
     sign
@@ -66,7 +72,7 @@ module.exports = {
                     message: results || "Something Went wrong. Please try again later",
                 });
             else {
-                console.log(results)
+                console.log("ln 69 sp login controller",results.rows[0] )
                 const toCreateToken = {
                     id: results.id,
                     role: "admin",
@@ -80,7 +86,8 @@ module.exports = {
                     data: results,
                     token: jsontoken,
                     role: results.rows[0].role,
-                    TYPE_OF_USER : 2 // for service provider dashboard.
+                    TYPE_OF_USER : 2,// for service provider dashboard.
+                    sp_id :  results.rows[0].sp_id
                 });
             }
         });
@@ -150,6 +157,28 @@ module.exports = {
         });
     },
 
+    spApprovalOfCustAppointment: (req, res) => {
+        spApprovalOfCustAppointment(req, (err, results) => {
+          if (err) {
+            res.status(500).send({
+              error: true,
+              message: results || "Something Went wrong. Please try again later",
+            });
+          } else {
+            // Extract the date from the timestamp
+            const appointmentDate = new Date(results[0].appointment_date);
+            const formattedDate = appointmentDate.toDateString();
+      
+            res.send({
+              error: false,
+              message: `You have ${results[0].appointment_status} ${results[0].name}'s appointment on ${formattedDate} at ${results[0].appointment_time}`,
+              data: results,
+            });
+          }
+        });
+      },
+      
+
     updateUserDetail: (req, res) => {
         updateUserDetail(req, (err, results) => {
             if (err)
@@ -214,8 +243,74 @@ module.exports = {
         });
     },
 
+    getAllTechnicianEmployee: (req, res) => {
+        getAllTechnicianEmployee(req, (err, results) => {
+            if (err)
+                res.status(500).send({
+                    error: true,
+                    message: results || "Something Went wrong. Please try again later",
+                });
+            else
+                res.send({
+                    error: false,
+                    message: "success",
+                    data: results,
+                });
+        });
+    },
+
     getAllEmployee: (req, res) => {
         getAllEmployee(req, (err, results) => {
+            if (err)
+                res.status(500).send({
+                    error: true,
+                    message: results || "Something Went wrong. Please try again later",
+                });
+            else
+                res.send({
+                    error: false,
+                    message: "success",
+                    data: results,
+                });
+        });
+    }, 
+
+    getAllModelPerBrand: (req, res) => {
+        getAllModelPerBrand(req, (err, results) => {
+            if (err)
+                res.status(500).send({
+                    error: true,
+                    message: results || "Something Went wrong. Please try again later",
+                });
+            else
+                res.send({
+                    error: false,
+                    message: "success",
+                    data: results,
+                });
+        });
+    },
+
+
+
+    getAllAppointment: (req, res) => {
+        getAllAppointment(req, (err, results) => {
+            if (err)
+                res.status(500).send({
+                    error: true,
+                    message: results || "Something Went wrong. Please try again later",
+                });
+            else
+                res.send({
+                    error: false,
+                    message: "success",
+                    data: results,
+                });
+        });
+    },
+
+    getAllPendingAppointment: (req, res) => {
+        getAllPendingAppointment(req, (err, results) => {
             if (err)
                 res.status(500).send({
                     error: true,
@@ -232,6 +327,22 @@ module.exports = {
 
     createEmployee: (req, res) => {
         createEmployee(req, (err, results) => {
+            if (err)
+                res.status(500).send({
+                    error: true,
+                    message: results || "Something Went wrong. Please try again later",
+                });
+            else
+                res.send({
+                    error: false,
+                    message: "success",
+                    data: results,
+                });
+        });
+    },
+
+    createAppointment: (req, res) => {
+        createAppointment(req, (err, results) => {
             if (err)
                 res.status(500).send({
                     error: true,

@@ -100,7 +100,7 @@ module.exports = {
           message: results || "Something Went wrong. Please try again later",
         });
       else {
-        console.log("ln 102 from admin controller",results)
+        // console.log("ln 102 from admin controller",results)
         res.send({
           error: false,
           message: "success",

@@ -3,6 +3,7 @@ var cors = require("cors");
 const bodyParser = require("body-parser");
 const adminRouter = require("./app/routes/admin.routes");
 const serviceProviderRouter = require("./app/routes/serviceprovider.routes");
+const customerRouter = require("./app/routes/customer.routes");
 const swaggerJsdoc = require("swagger-jsdoc");
 const swaggerUi = require("swagger-ui-express");
 const app = express();
@@ -17,6 +18,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 app.use("/api/admin", adminRouter);
 app.use("/api/serviceprovider", serviceProviderRouter);
+app.use("/api/customer", customerRouter);
 
 const options = {
   "definition": {

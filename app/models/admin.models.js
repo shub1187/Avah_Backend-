@@ -61,23 +61,41 @@ module.exports = {
 
         // Insert into approved_service_providers table
         const insertQuery = {
-            text: 'INSERT INTO approved_service_providers (name, email, business_name, business_type, document, password,approval_status,role,business_address,sp_status,business_contact,is_deleted) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)',
-            values: [...Object.values(insertValues), false]
+            text: 'INSERT INTO approved_service_providers (name, email, business_name, business_type, document, password,approval_status,role,business_address,sp_status,business_contact,state,city,pin_code,full_address,is_deleted) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,$13,$14,$15,$16)',
+            // values: [...Object.values(insertValues), false]
+            values : [   insertValues.name,
+              insertValues.email,
+              insertValues.business_name,
+              insertValues.business_type,
+              insertValues.document,
+              insertValues.password,
+              insertValues.approval_status,
+              insertValues.role,
+              insertValues.business_address,
+              insertValues.sp_status,
+              insertValues.business_contact,
+              insertValues.state,
+              insertValues.city,
+              insertValues.pin_code,
+              insertValues.full_address,
+              false // The value you were adding
+            ]
         };
         await client.query(insertQuery); 
         // Delete from pending_request_sp_dealer table
         const deleteQuery = {
-          text: 'DELETE FROM pending_request_sp_dealer WHERE email = $1',
-          values: [email]
+          text: 'UPDATE pending_request_sp_dealer SET is_deleted = $1  WHERE email = $2',
+          values: [true,email]
         };
         await client.query(deleteQuery);
         return callback(false, 'Service Provider added to the system successfully');
       }
       // Admin does not want to approve the service provider
       else if (approval_status == false){
+        console.log("entered 91")
         const deleteQuery = {
-          text: 'DELETE FROM pending_request_sp_dealer WHERE email = $1',
-          values: [email]
+          text: 'UPDATE pending_request_sp_dealer SET is_deleted = $1  WHERE email = $2',
+          values: [true,email]
         };
         await client.query(deleteQuery);
         return callback(false, 'Service Provider Deleted from the system succesfully');
@@ -123,7 +141,7 @@ module.exports = {
   
       console.log("ln 124", req.query.page, req.query.limit);
       const getall_pending_sp_query = {
-        text: 'SELECT * FROM pending_request_sp_dealer ORDER BY register_sp_id  DESC  LIMIT $1 OFFSET $2',
+        text: 'SELECT * FROM pending_request_sp_dealer WHERE is_deleted = false ORDER BY register_sp_id  DESC  LIMIT $1 OFFSET $2',
         values: [limit, offset],
       };
       console.log("ln 430",  getall_pending_sp_query);
@@ -148,7 +166,7 @@ module.exports = {
                     totalRows: totalRows,
                   },
                 };
-                console.log("ln 151 from admin model", results);
+                // console.log("ln 151 from admin model", results);
                 return callback(false, results);
               };
   
@@ -243,7 +261,7 @@ module.exports = {
   createUser: async (req, callback) => {
     try {
       var body = req.body;
-      console.log("entered createUsER")
+      // console.log("entered createUsER")
       const {first_name, last_name,email,mobile, password}=req.body
       console.log(body.first_name)
       const data = await new Promise((resolve) => {
@@ -851,95 +869,119 @@ module.exports = {
   },
 
   getAllBrands: async (req, callback) => {
+    // try {
+    //   console.log(req.page);
+    //   var numRows;
+    //   var queryPagination;
+    //   var numPerPage = parseInt(req.query.numberPerPage, 10) || 2000;
+    //   var page = parseInt(req.query.page, 10) || 0;
+    //   var numPages;
+    //   var skip = page * numPerPage;
+    //   // Here we compute the LIMIT parameter for MySQL query
+    //   var limit = skip + "," + numPerPage;
+    //   const data = await new Promise((resolve) => {
+    //     sql.query(
+    //       "SELECT count(*) as numRows FROM brands WHERE is_deleted=0",
+    //       (err, sqlResult) => {
+    //         resolve(sqlResult);
+    //       }
+    //     );
+    //   });
+    //   console.log(data);
+    //   if (data) {
+    //     numRows = data[0].numRows;
+    //     numPages = Math.ceil(numRows / numPerPage);
+    //     console.log("number of pages:", numPages);
+    //     const data2 = await new Promise((resolve) => {
+    //       sql.query(
+    //         "SELECT * FROM brands WHERE is_deleted=0 ORDER BY ID DESC LIMIT " +
+    //         limit,
+    //         (err, sqlResult) => {
+    //           resolve(sqlResult);
+    //         }
+    //       );
+    //     });
+    //     if (data2) {
+    //       var responsePayload = {
+    //         results: data2,
+    //       };
+    //       if (page < numPages) {
+    //         responsePayload.pagination = {
+    //           current: page,
+    //           perPage: numPerPage,
+    //           totalPage: numPages,
+    //           previous: page > 0 ? page - 1 : undefined,
+    //           next: page < numPages - 1 ? page + 1 : undefined,
+    //         };
+    //       } else
+    //         responsePayload.pagination = {
+    //           err: "queried page " +
+    //             page +
+    //             " is >= to maximum page number " +
+    //             numPages,
+    //         };
+    //       return callback(false, responsePayload);
+    //     } else {
+    //       return callback(true, "No data found");
+    //     }
+    //   } else {
+    //     return callback(true, "No data found");
+    //   }
+    // } catch (e) {
+    //   callback(true, e);
+    // }
     try {
-      console.log(req.page);
-      var numRows;
-      var queryPagination;
-      var numPerPage = parseInt(req.query.numberPerPage, 10) || 2000;
-      var page = parseInt(req.query.page, 10) || 0;
-      var numPages;
-      var skip = page * numPerPage;
-      // Here we compute the LIMIT parameter for MySQL query
-      var limit = skip + "," + numPerPage;
+      const getall_brands = {
+        text: 'SELECT * FROM brands',
+      };
       const data = await new Promise((resolve) => {
-        sql.query(
-          "SELECT count(*) as numRows FROM brands WHERE is_deleted=0",
-          (err, sqlResult) => {
-            resolve(sqlResult);
+        client.query(
+          getall_brands,
+          (err, result) => {
+           if (err){
+            console.log(err)
+            return callback(true, "Unable to fetch the brands");
+           }
+             else {
+              const results = {
+                results: result.rows,
+                pagination: {
+                  currentPage: 1,
+                  totalPages: 1,
+                  totalRows: "9",
+                },
+              };
+              return callback(false, results);
+            }
           }
         );
       });
-      console.log(data);
-      if (data) {
-        numRows = data[0].numRows;
-        numPages = Math.ceil(numRows / numPerPage);
-        console.log("number of pages:", numPages);
-        const data2 = await new Promise((resolve) => {
-          sql.query(
-            "SELECT * FROM brands WHERE is_deleted=0 ORDER BY ID DESC LIMIT " +
-            limit,
-            (err, sqlResult) => {
-              resolve(sqlResult);
-            }
-          );
-        });
-        if (data2) {
-          var responsePayload = {
-            results: data2,
-          };
-          if (page < numPages) {
-            responsePayload.pagination = {
-              current: page,
-              perPage: numPerPage,
-              totalPage: numPages,
-              previous: page > 0 ? page - 1 : undefined,
-              next: page < numPages - 1 ? page + 1 : undefined,
-            };
-          } else
-            responsePayload.pagination = {
-              err: "queried page " +
-                page +
-                " is >= to maximum page number " +
-                numPages,
-            };
-          return callback(false, responsePayload);
-        } else {
-          return callback(true, "No data found");
-        }
-      } else {
-        return callback(true, "No data found");
-      }
     } catch (e) {
-      callback(true, e);
+      console.log("Error:", e);
+      return callback(true, e.message);
     }
   },
 
   createBrand: async (req, callback) => {
     try {
-      var body = req.body;
+      var body = req.body
+      console.log(body,"ln 960 admin model")
+      const query = 'INSERT INTO brands (brand_image,brand_name) VALUES ($1, $2) RETURNING *';
+      const values = [body.brand_image,body.brand_name];
+      
       const data = await new Promise((resolve) => {
-        // sql.query(
-        //   "INSERT into brands (brand_image,brand_code,brand_name) VALUES (?,?,?)",
-        //   [body.brand_image, body.brand_code, body.brand_name],
-        //   (err, sqlResult) => {
-        //     resolve(sqlResult);
-        //   }
-        // );
-        client.query(
-          "INSERT INTO brands (brand_image,brand_code,brand_name) VALUES ($1,$2,$3) RETURNING * ",[body.brand_image, body.brand_code, body.brand_name],
-        (err,data)=>{
-          if (data) {
-            return callback(false, data);
-          } else {
-            return callback(true, err.message);
+        client.query(query, values, (err, result) => {
+          if (err) {
+            // console.error('Error In  ln 967:', err);
+            return callback(true, 'This Brand already exists in the system');
           }
-        } 
-        );
+          // console.log('Brand added to the system succesfully');
+          return callback(false, result.rows);
+        });
       });
-    } catch {
-      console.log("catch block");
-      callback(true, "error");
-      return true;
+    } catch (error) {
+      console.error('Error in adding brand ', error);
+      return callback(true, error.message);
     }
   },
 
@@ -1111,97 +1153,56 @@ module.exports = {
 
   getAllModels: async (req, callback) => {
     try {
-      console.log(req.page);
-      var numRows;
-      var queryPagination;
-      var numPerPage = parseInt(req.query.numberPerPage, 10) || 2000;
-      var page = parseInt(req.query.page, 10) || 0;
-      var numPages;
-      var skip = page * numPerPage;
-      // Here we compute the LIMIT parameter for MySQL query
-      var limit = skip + "," + numPerPage;
+      const getall_models = {
+        text: 'SELECT * FROM models',
+      };
       const data = await new Promise((resolve) => {
-        sql.query(
-          "SELECT count(*) as numRows FROM models WHERE is_deleted=0",
-          (err, sqlResult) => {
-            resolve(sqlResult);
+        client.query(
+          getall_models,
+          (err, result) => {
+           if (err){
+            console.log(err)
+            return callback(true, "Unable to fetch the models");
+           }
+             else {
+              const results = {
+                results: result.rows,
+                pagination: {
+                  currentPage: 1,
+                  totalPages: 1,
+                  totalRows: "9",
+                }
+              };
+              return callback(false, results);
+            }
           }
         );
       });
-      console.log(data);
-      if (data) {
-        numRows = data[0].numRows;
-        numPages = Math.ceil(numRows / numPerPage);
-        console.log("number of pages:", numPages);
-        const data2 = await new Promise((resolve) => {
-          sql.query(
-            "SELECT models.*,brands.brand_name FROM models INNER JOIN brands ON models.brand_id=brands.id WHERE models.is_deleted=0 ORDER BY ID DESC LIMIT " +
-            limit,
-            (err, sqlResult) => {
-              resolve(sqlResult);
-            }
-          );
-        });
-        if (data2) {
-          var responsePayload = {
-            results: data2,
-          };
-          if (page < numPages) {
-            responsePayload.pagination = {
-              current: page,
-              perPage: numPerPage,
-              totalPage: numPages,
-              previous: page > 0 ? page - 1 : undefined,
-              next: page < numPages - 1 ? page + 1 : undefined,
-            };
-          } else
-            responsePayload.pagination = {
-              err: "queried page " +
-                page +
-                " is >= to maximum page number " +
-                numPages,
-            };
-          return callback(false, responsePayload);
-        } else {
-          return callback(true, "No data found");
-        }
-      } else {
-        return callback(true, "No data found");
-      }
     } catch (e) {
-      callback(true, e);
+      console.log("Error:", e);
+      return callback(true, e.message);
     }
   },
 
   createModel: async (req, callback) => {
     try {
-      var body = req.body;
+      var body = req.body
+      console.log(body,"ln 1216 admin model")
+      const query = 'INSERT INTO models (model_name,brand_name,fuel_type) VALUES ($1, $2, $3) RETURNING *';
+      const values = [body.model_name,body.brand_name,body.fuel_type];
       const data = await new Promise((resolve) => {
-      //   sql.query(
-      //     "INSERT into models (brand_id,model_code,model_name) VALUES (?,?,?)",
-      //     [body.brand_id, body.model_code, body.model_name],
-      //     (err, sqlResult) => {
-      //       resolve(sqlResult);
-      //     }
-      //   );
-
-      client.query(
-        "INSERT INTO models (brand_id,model_code,model_name) VALUES ($1,$2,$3) RETURNING * ",[body.brand_id, body.model_code, body.model_name],
-      (err,data)=>{
-        if (data) {
-          return callback(false, data);
-        } else {
-          return callback(true, err.message);
-        }
-      } 
-      );
-      
+        client.query(query, values, (err, result) => {
+          if (err) {
+            console.error('Error In  ln 1222:', err);
+            return callback(true, 'This Model already exists in the system');
+          }
+          // console.log('Brand added to the system succesfully');
+          return callback(false, result.rows);
+        });
       });
-     
-    } catch {
-      console.log("catch block");
-      callback(true, "error");
-      return true;
+    } catch (error) {
+      console.error('Error in adding model', error);
+      return callback(true, error.message);
     }
   },
 
@@ -1373,96 +1374,58 @@ module.exports = {
 
   getAllFuelTypes: async (req, callback) => {
     try {
-      console.log(req.page);
-      var numRows;
-      var queryPagination;
-      var numPerPage = parseInt(req.query.numberPerPage, 10) || 2000;
-      var page = parseInt(req.query.page, 10) || 0;
-      var numPages;
-      var skip = page * numPerPage;
-      // Here we compute the LIMIT parameter for MySQL query
-      var limit = skip + "," + numPerPage;
+      const getall_fuel_type = {
+        text: 'SELECT * FROM fuels'
+      };
       const data = await new Promise((resolve) => {
-        sql.query(
-          "SELECT count(*) as numRows FROM fuels WHERE is_deleted=0",
-          (err, sqlResult) => {
-            resolve(sqlResult);
+        client.query(
+          getall_fuel_type,
+          (err, result) => {
+           if (err){
+            console.log(err)
+            return callback(true, "Unable to fetch the fuel type");
+           }
+             else {
+              const results = {
+                results: result.rows,
+                pagination: {
+                  currentPage: 1,
+                  totalPages: 1,
+                  totalRows: "9",
+                },
+              };
+              return callback(false, results);
+            }
           }
         );
       });
-      console.log(data);
-      if (data) {
-        numRows = data[0].numRows;
-        numPages = Math.ceil(numRows / numPerPage);
-        console.log("number of pages:", numPages);
-        const data2 = await new Promise((resolve) => {
-          sql.query(
-            "SELECT * FROM fuels WHERE is_deleted=0 ORDER BY ID DESC LIMIT " +
-            limit,
-            (err, sqlResult) => {
-              resolve(sqlResult);
-            }
-          );
-        });
-        if (data2) {
-          var responsePayload = {
-            results: data2,
-          };
-          if (page < numPages) {
-            responsePayload.pagination = {
-              current: page,
-              perPage: numPerPage,
-              totalPage: numPages,
-              previous: page > 0 ? page - 1 : undefined,
-              next: page < numPages - 1 ? page + 1 : undefined,
-            };
-          } else
-            responsePayload.pagination = {
-              err: "queried page " +
-                page +
-                " is >= to maximum page number " +
-                numPages,
-            };
-          return callback(false, responsePayload);
-        } else {
-          return callback(true, "No data found");
-        }
-      } else {
-        return callback(true, "No data found");
-      }
     } catch (e) {
-      callback(true, e);
+      console.log("Error:", e);
+      return callback(true, e.message);
     }
   },
 
   createFuelType: async (req, callback) => {
     try {
-      var body = req.body;
+      var body = req.body
+      console.log(body,"ln 960 admin model")
+      const query = 'INSERT INTO fuels (fuel_name) VALUES ($1) RETURNING *';
+      const values = [body.fuel_name];    
       const data = await new Promise((resolve) => {
-      //   sql.query(
-      //     "INSERT into fuels (fuel_name) VALUES (?)",
-      //     [body.fuel_name],
-      //     (err, sqlResult) => {
-      //       resolve(sqlResult);
-      //     }
-      //   );
-      client.query(
-        "INSERT INTO fuels (fuel_name) VALUES ($1) RETURNING * ",[body.fuel_name],
-      (err,data)=>{
-        if (data) {
-          return callback(false, data);
-        } else {
-          return callback(true, err.message);
-        }
-      } 
-      );
+        client.query(query, values, (err, result) => {
+          if (err) {
+            console.error('Error In  ln 1454:', err);
+            return callback(true, 'This fuel type  already exists in the system');
+          }
+          // console.log('Brand added to the system succesfully');
+          return callback(false, result.rows);
+        });
       });
-     
-    } catch {
-      console.log("catch block");
-      callback(true, "error");
-      return true;
+    } catch (error) {
+      console.error('Error in adding fuel type', error);
+      return callback(true, error.message);
     }
+   
   },
 
   getFuelTypeById: async (req, callback) => {

@@ -3,6 +3,8 @@ const {
     login,
     getAllUsers,
     createUser,
+    createAppointment,
+    getAllModelPerBrand,
     getUserById,
     updateUserDetail,
     deleteUser,
@@ -10,6 +12,8 @@ const {
     updateUserPassword,
     updateUserActive,
     getAllEmployee,
+    getAllAppointment,
+    getAllTechnicianEmployee,
     createEmployee,
     getEmployeeById,
     updateEmployeeDetail,
@@ -34,6 +38,8 @@ const {
     getLabourSearch,
     createEstimate,
     getAllEstimate,
+    spApprovalOfCustAppointment,
+    getAllPendingAppointment
 } = require("../controllers/serviceproviders.controllers.js");
 const router = require("express").Router();
 const { checkToken } = require("../middlewares/auth_validation");
@@ -134,6 +140,7 @@ router.post("/updateUserPassword", checkToken, updateUserPassword);
 
 //employee
 router.get("/getAllEmployee", checkToken, getAllEmployee);
+router.get("/getAllTechnicianEmployee", checkToken, getAllTechnicianEmployee);
 router.post("/createEmployee", checkToken, createEmployee);
 router.post("/getEmployeeById", checkToken, getEmployeeById);
 router.post("/updateEmployeeDetail", checkToken, updateEmployeeDetail);
@@ -141,6 +148,14 @@ router.post("/deleteEmployee", checkToken, deleteEmployee);
 router.get("/getEmployeeSearch", checkToken, getEmployeeSearch);
 router.post("/updateEmployeeActive", checkToken, updateEmployeeActive);
 router.post("/updateEmployeePassword", checkToken, updateEmployeePassword);
+
+//Appointment 
+router.post("/createAppointment", checkToken, createAppointment);
+router.get("/getAllAppointment", checkToken, getAllAppointment);
+router.get("/getAllModelPerBrand", checkToken, getAllModelPerBrand);
+router.get("/getAllPendingAppointment", checkToken, getAllPendingAppointment);
+
+router.post("/approveCustAppointment", checkToken, spApprovalOfCustAppointment);
 
 //spares
 router.get("/getAllSpare", checkToken, getAllSpare);

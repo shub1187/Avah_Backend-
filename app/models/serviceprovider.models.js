@@ -17,8 +17,10 @@ module.exports = {
   register: async (req, callback) => {
     try {
       var body = req.body
-      const query = 'INSERT INTO pending_request_sp_dealer (name, email, business_name, business_type, document, password,approval_status,role,business_contact,sp_status,business_address) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *';
-      const values = [body.name, body.email, body.business_name, body.business_type, body.document, body.password,body.approval_status,body.role,body.business_contact,body.sp_status,body.business_address];
+      // Calculate the full_address by concatenating address, city, state, and pin_code
+      const full_address = `${body.business_address} ${body.city} ${body.state} ${body.pin_code}`;
+      const query = 'INSERT INTO pending_request_sp_dealer (name, email, business_name, business_type, document, password,approval_status,role,business_contact,sp_status,business_address,state,city,pin_code,full_address,is_deleted) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,$13,$14,$15,$16) RETURNING *';
+      const values = [body.name, body.email, body.business_name, body.business_type, body.document, body.password,body.approval_status,body.role,body.business_contact,body.sp_status,body.business_address,body.state,body.city,body.pin_code,full_address,false];
       
       const data = await new Promise((resolve) => {
         client.query(query, values, (err, result) => {
@@ -41,10 +43,12 @@ module.exports = {
     try {
       const login_query = {text: 'SELECT * FROM approved_service_providers WHERE email = $1 AND password = $2 AND role = $3',
       values: [req.body.email, req.body.password, req.body.role]}
+      console.log( login_query)
         const data = await new Promise((resolve) => {
           client.query(
             login_query, 
             (err,result)=>{
+              console.log("result",result)
             if (result.rows.length==1 && result.rows[0].sp_status == 'active' ) {  // Login successfull for active service provider
               return callback(false, result);
             } 
@@ -366,98 +370,223 @@ module.exports = {
       return true;
     }
   },
-
-  getAllEmployee: async (req, callback) => {
-    try {
-      console.log(req.page);
-      var numRows;
-      var queryPagination;
-      var numPerPage = parseInt(req.query.numberPerPage, 10) || 2000;
-      var page = parseInt(req.query.page, 10) || 0;
-      var numPages;
-      var skip = page * numPerPage;
-      // Here we compute the LIMIT parameter for MySQL query
-      var limit = skip + "," + numPerPage;
-      const data = await new Promise((resolve) => {
-        sql.query(
-          "SELECT count(*) as numRows FROM employees WHERE is_deleted=0",
-          (err, sqlResult) => {
-            resolve(sqlResult);
+  // To get list of technician for creating Job Card
+  getAllTechnicianEmployee: async (req, callback) => {
+   try {
+    console.log("getAlltech:", req.query)
+    const { sp_id } = req.query;
+    const getall_technician = {
+      text: 'SELECT * FROM employee WHERE role = $1 AND sp_id = $2',
+      values: ['technician', sp_id],
+    };
+    const data = await new Promise((resolve) => {
+      client.query(
+        getall_technician,
+        (err, result) => {
+         if (err){
+          console.log(err)
+          return callback(true, "Unable to fetch the technican details");
+         }
+           else {
+            let technican_names = [];
+           result.rows.map((x) => {
+              technican_names.push(x.name);
+            });
+            console.log(technican_names);
+            const results = {
+              results: technican_names ,
+              pagination: {
+                currentPage: 1,
+                totalPages: 1,
+                totalRows: "9",
+              },
+            };
+            return callback(false, results);
           }
-        );
-      });
-      console.log(data);
-      if (data) {
-        numRows = data[0].numRows;
-        numPages = Math.ceil(numRows / numPerPage);
-        console.log("number of pages:", numPages);
-        const data2 = await new Promise((resolve) => {
-          sql.query(
-            "SELECT * FROM employees WHERE is_deleted=0 ORDER BY ID DESC LIMIT " +
-            limit,
-            (err, sqlResult) => {
-              resolve(sqlResult);
-            }
-          );
-        });
-        if (data2) {
-          var responsePayload = {
-            results: data2,
-          };
-          if (page < numPages) {
-            responsePayload.pagination = {
-              current: page,
-              perPage: numPerPage,
-              totalPage: numPages,
-              previous: page > 0 ? page - 1 : undefined,
-              next: page < numPages - 1 ? page + 1 : undefined,
-            };
-          } else
-            responsePayload.pagination = {
-              err: "queried page " +
-                page +
-                " is >= to maximum page number " +
-                numPages,
-            };
-          return callback(false, responsePayload);
-        } else {
-          return callback(true, "No data found");
         }
-      } else {
-        return callback(true, "No data found");
-      }
-    } catch (e) {
-      callback(true, e);
+      );
+    });
+   }
+   catch (e){
+    return callback(true, e.message);
+   }
+  },
+// To get all Employee list as per the sp irr respective of role
+getAllEmployee: async (req, callback) => {
+  try {
+    const { sp_id, q, _page, _limit } = req.query;
+    let queryText = 'SELECT * FROM employee WHERE sp_id = $1';
+    const queryParams = [sp_id];
+
+    if (q) { // This is for search functionality
+      queryText += ' AND (name ILIKE $2 OR email ILIKE $2 OR role ILIKE $2 OR status ILIKE $2 OR mobile ILIKE $2  )';
+      queryParams.push(`%${q}%`);
+    }
+
+    const getall_employee = {
+      text: queryText,
+      values: queryParams,
+    };
+
+    const data = await new Promise((resolve) => {
+      client.query(getall_employee, (err, result) => {
+        if (err) {
+          console.log(err);
+          return callback(true, "Unable to fetch the technician details");
+        } else {
+          const results = {
+            results: result.rows,
+            pagination: {
+              currentPage: parseInt(_page) || 1,
+              totalPages: 1,
+              totalRows: result.rowCount.toString(),
+            },
+          };
+          return callback(false, results);
+        }
+      });
+    });
+  } catch (e) {
+    return callback(true, e.message);
+  }
+},
+
+// To get all model as per brand 
+getAllModelPerBrand: async (req, callback) => {
+  try {
+    console.log(req.body)
+    const getall_models = {
+      text: 'SELECT model_name, brand_name FROM models',
+    };
+    const data = await new Promise((resolve) => {
+      client.query(
+        getall_models,
+        (err, result) => {
+         if (err){
+          console.log(err)
+          return callback(true, "Unable to fetch the models");
+         }
+           else {
+            const data = result.rows;
+              // Transform data into the desired format
+              const brandModelMap = {};
+              data.forEach(row => {
+                const { brand_name, model_name } = row;
+                if (!brandModelMap[brand_name]) {
+                  brandModelMap[brand_name] = [];
+                }
+                brandModelMap[brand_name].push(model_name);
+              });
+              // Convert the transformed data to the desired array of objects format
+              const resultArray = Object.keys(brandModelMap).map(brand_name => {
+                return { [brand_name]: brandModelMap[brand_name] };
+              });
+              console.log(resultArray);
+            const results = {
+              results: resultArray,
+              pagination: {
+                currentPage: 1,
+                totalPages: 1,
+                totalRows: "9",
+              }
+            };
+            return callback(false, results);
+          }
+        }
+      );
+    });
+  } catch (e) {
+    console.log("Error:", e);
+    return callback(true, e.message);
+  }
+},
+
+// To get all Appointment list as per the sp irr respective of status
+getAllAppointment: async (req, callback) => {
+  try {
+    const { sp_id, q, _page, _limit } = req.query;
+    let queryText = 'SELECT * FROM appointment WHERE sp_id = $1';
+    const queryParams = [sp_id];
+
+    if (q) { // This is for search functionality
+      queryText += ' AND (name ILIKE $2 OR email ILIKE $2 OR role ILIKE $2 OR status ILIKE $2 OR mobile ILIKE $2  )';
+      queryParams.push(`%${q}%`);
+    }
+
+    const getall_employee = {
+      text: queryText,
+      values: queryParams,
+    };
+
+    const data = await new Promise((resolve) => {
+      client.query(getall_employee, (err, result) => {
+        if (err) {
+          console.log(err);
+          return callback(true, "Unable to fetch the appointment details");
+        } else {
+          const results = {
+            results: result.rows,
+            pagination: {
+              currentPage: parseInt(_page) || 1,
+              totalPages: 1,
+              totalRows: result.rowCount.toString(),
+            },
+          };
+          return callback(false, results);
+        }
+      });
+    });
+  } catch (e) {
+    return callback(true, e.message);
+  }
+},
+
+// get All Model as per brands to create appointment.
+
+
+
+
+  createEmployee:async (req, callback) => {
+    try {
+      var body = req.body
+      const query = 'INSERT INTO employee (sp_id, name, email, mobile, gender, role, address, country, state, city, pin_code, pan_number, password, status, is_deleted) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING *';
+      const values = [body.sp_id, body.name, body.email, body.mobile, body.gender, body.role,body.address,body.country,body.state,body.city,body.pin_code,body.pan_number,body.password,body.status, false];
+      
+      const data = await new Promise((resolve) => {
+        client.query(query, values, (err, result) => {
+          if (err) {
+            console.error('Error in creating new Employee:', err);
+            return callback(true, 'Employee creation failed');
+          }
+          console.log('New Employee created successfully!');
+          return callback(false, result.rows);
+        });
+      });
+    } catch (error) {
+      console.error('Error in creating new Employee:', error);
+      return callback(true, error.message);
     }
   },
 
-  createEmployee: async (req, callback) => {
+  createAppointment:async (req, callback) => {
     try {
-      var body = req.body;
+      var body = req.body
+      const query = 'INSERT INTO appointment (name,sp_id, vehicle_number,vehicle_type, brand,model, email, mobile, pickup_drop,address,service_date, booking_date,status,is_deleted) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *';
+      const values = [ body.name,body.sp_id,body.vehicle_number,body.vehicle_type,body.brand,body.model,body.email,body.mobile, body.pickup_drop,body.address,body.service_date,body.booking_date,body.status, false];
+      
       const data = await new Promise((resolve) => {
-        sql.query(
-          "INSERT into employees (first_name,last_name,email,mobile,password) VALUES (?,?,?,?,?)",
-          [
-            body.first_name,
-            body.last_name,
-            body.email,
-            body.mobile,
-            body.password,
-          ],
-          (err, sqlResult) => {
-            resolve(sqlResult);
+        client.query(query, values, (err, result) => {
+          if (err) {
+            console.error('Error in creating Appointment:', err);
+            return callback(true, 'Appointment creation failed');
           }
-        );
+          console.log('Appointment created successfully!');
+          return callback(false, result.rows);
+        });
       });
-      if (data) {
-        return callback(false, data);
-      } else {
-        return callback(true, "Please choose other mobile number");
-      }
-    } catch {
-      console.log("catch block");
-      callback(true, "error");
-      return true;
+    } catch (error) {
+      console.error('Error in creating Appointment from Service Provider Portal : ', error);
+      return callback(true, error.message);
     }
   },
 
@@ -1393,4 +1522,91 @@ module.exports = {
       callback(true, e);
     }
   },
+
+  // Service Provider Authority to approve/reject 
+
+  
+  spApprovalOfCustAppointment: async (req, callback) => {
+    try {
+      const body = req.body;
+      const { appointment_id, appointment_status, is_reschedule_allowed,sp_rejection_note } = body;
+  
+      // Define the query and values based on the appointment_status
+      let updateAppointmentQuery;
+      let queryValues;
+      
+      if (appointment_status === 'approved') {
+        updateAppointmentQuery = {
+          text: "UPDATE appointment SET appointment_status = 'approved' WHERE appointment_id = $1 AND appointment_status <> 'cancelled' RETURNING name, appointment_status,appointment_date,appointment_time",
+          values: [appointment_id],
+        };
+      } else if (appointment_status === 'rejected') {
+        updateAppointmentQuery = {
+          text: "UPDATE appointment SET appointment_status = 'rejected', is_reschedule_allowed = $2, has_sp_rejected =$3, sp_rejection_note = $4 WHERE appointment_id = $1 AND appointment_status <> 'cancelled' RETURNING name, appointment_status,appointment_date,appointment_time",
+          values: [appointment_id, is_reschedule_allowed,true,sp_rejection_note],
+        };
+      } else {
+        return callback(true, 'Invalid appointment_status');
+      }
+  
+      const data = await new Promise((resolve) => {
+        client.query(updateAppointmentQuery, (err, result) => {
+          if (err) {
+            console.error('Error in updating appointment:', err);
+            return callback(true, 'Appointment updatation failed');
+          }
+          if (result.rows.length === 0) {
+            return callback(true, 'Appointment not found or cannot be updated');
+          }
+          console.log(`Appointment ${appointment_status} successfully!`);
+          return callback(false, result.rows);
+        });
+      });
+    } catch (error) {
+      console.error('Error in updating appointment:', error);
+      return callback(true, error.message);
+    }
+  },
+
+  getAllPendingAppointment: async (req, callback) => {
+    try {
+      const { sp_id, q, _page, _limit } = req.query;
+      let queryText = 'SELECT * FROM appointment WHERE sp_id = $1 AND appointment_status=$2';
+      const queryParams = [sp_id,'pending'];
+  
+      // if (q) { // This is for search functionality
+      //   queryText += ' AND (name ILIKE $2 OR email ILIKE $2 OR role ILIKE $2 OR status ILIKE $2 OR mobile ILIKE $2  )';
+      //   queryParams.push(`%${q}%`);
+      // }
+  
+      const getall_employee = {
+        text: queryText,
+        values: queryParams,
+      };
+  
+      const data = await new Promise((resolve) => {
+        client.query(getall_employee, (err, result) => {
+          if (err) {
+            console.log(err);
+            return callback(true, "Unable to fetch the pending appointment details");
+          } else {
+            const results = {
+              results: result.rows,
+              pagination: {
+                currentPage: parseInt(_page) || 1,
+                totalPages: 1,
+                totalRows: result.rowCount.toString(),
+              },
+            };
+            return callback(false, results);
+          }
+        });
+      });
+    } catch (e) {
+      return callback(true, e.message);
+    }
+  },
+
+
+  
 };
