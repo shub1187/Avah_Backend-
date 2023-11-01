@@ -39,7 +39,8 @@ const {
     createEstimate,
     getAllEstimate,
     spApprovalOfCustAppointment,
-    getAllPendingAppointment
+    getAllPendingAppointment,
+    getAllRejectedAndCancelledAppointment
 } = require("../controllers/serviceproviders.controllers.js");
 const router = require("express").Router();
 const { checkToken } = require("../middlewares/auth_validation");
@@ -154,8 +155,9 @@ router.post("/createAppointment", checkToken, createAppointment);
 router.get("/getAllAppointment", checkToken, getAllAppointment);
 router.get("/getAllModelPerBrand", checkToken, getAllModelPerBrand);
 router.get("/getAllPendingAppointment", checkToken, getAllPendingAppointment);
+router.get("/getAllRejectedAndCancelledAppointment", checkToken, getAllRejectedAndCancelledAppointment);
 
-router.post("/approveCustAppointment", checkToken, spApprovalOfCustAppointment);
+router.post("/approveCustAppointment", checkToken, spApprovalOfCustAppointment); // Currently Not in Use
 
 //spares
 router.get("/getAllSpare", checkToken, getAllSpare);

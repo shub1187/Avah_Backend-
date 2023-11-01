@@ -29,7 +29,7 @@ module.exports = {
             (err,data)=>{
             if (data.rows.length === 1) {  // Login successfull
               console.log("ln 44",data.rows.length)
-              return callback(false, data);
+              return callback(false, data.rows);
             } else {
               return callback(true, "Kindly Enter Correct Credentials");
             }

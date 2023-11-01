@@ -1535,14 +1535,14 @@ getAllAppointment: async (req, callback) => {
       let updateAppointmentQuery;
       let queryValues;
       
-      if (appointment_status === 'approved') {
+      if (appointment_status === 'Approved') {
         updateAppointmentQuery = {
-          text: "UPDATE appointment SET appointment_status = 'approved' WHERE appointment_id = $1 AND appointment_status <> 'cancelled' RETURNING name, appointment_status,appointment_date,appointment_time",
+          text: "UPDATE appointment SET appointment_status = 'Approved' WHERE appointment_id = $1 AND appointment_status <> 'Cancelled By SP' RETURNING name, appointment_status,appointment_date,appointment_time",
           values: [appointment_id],
         };
-      } else if (appointment_status === 'rejected') {
+      } else if (appointment_status === 'Rejected By SP') {
         updateAppointmentQuery = {
-          text: "UPDATE appointment SET appointment_status = 'rejected', is_reschedule_allowed = $2, has_sp_rejected =$3, sp_rejection_note = $4 WHERE appointment_id = $1 AND appointment_status <> 'cancelled' RETURNING name, appointment_status,appointment_date,appointment_time",
+          text: "UPDATE appointment SET appointment_status = 'Rejected By SP', is_reschedule_allowed = $2, has_sp_rejected =$3, sp_rejection_note = $4 WHERE appointment_id = $1 AND appointment_status <> 'cancelled' RETURNING name, appointment_status,appointment_date,appointment_time",
           values: [appointment_id, is_reschedule_allowed,true,sp_rejection_note],
         };
       } else {
@@ -1570,9 +1570,49 @@ getAllAppointment: async (req, callback) => {
 
   getAllPendingAppointment: async (req, callback) => {
     try {
+      console.log("Entered 1573 pending Appointment")
       const { sp_id, q, _page, _limit } = req.query;
-      let queryText = 'SELECT * FROM appointment WHERE sp_id = $1 AND appointment_status=$2';
-      const queryParams = [sp_id,'pending'];
+      let queryText = 'SELECT appointment_id,name,vehicle_number,vehicle_type,brand,model,customization,fuel_type,email,mobile_number,pickup_drop,appointment_date,appointment_time,appointment_status,estimate_status,pickup_address FROM appointment WHERE sp_id = $1 AND (appointment_status = $2 OR appointment_status = $3)';
+      const queryParams = [sp_id, 'Approved', 'Pending'];
+  
+      if (q) { // This is for search functionality
+        queryText += ' AND (name ILIKE $4 OR vehicle_number ILIKE $4 OR vehicle_type ILIKE $4 OR appointment_status ILIKE $4)';
+        queryParams.push(`%${q}%`);
+      }
+  
+      const getall_employee = {
+        text: queryText,
+        values: queryParams,
+      };
+  
+      const data = await new Promise((resolve) => {
+        client.query(getall_employee, (err, result) => {
+          if (err) {
+            console.log(err);
+            return callback(true, "Unable to fetch the pending appointment details");
+          } else {
+            const results = {
+              results: result.rows,
+              pagination: {
+                currentPage: parseInt(_page) || 1,
+                totalPages: 1,
+                totalRows: result.rowCount.toString(),
+              },
+            };
+            return callback(false, results);
+          }
+        });
+      });
+    } catch (e) {
+      return callback(true, e.message);
+    }
+  },
+
+  getAllRejectedAndCancelledAppointment: async (req, callback) => {
+    try {
+      const { sp_id, q, _page, _limit } = req.query;
+      let queryText = 'SELECT appointment_id,name,vehicle_number,vehicle_type,brand,model,customization,fuel_type,email,mobile_number,pickup_drop,pickup_address,appointment_date,appointment_time,appointment_status,sp_rejection_note,cust_cancellation_note,sp_cancellation_note FROM appointment WHERE sp_id = $1 AND (appointment_status = $2 OR appointment_status = $3 OR appointment_status = $4)';
+      const queryParams = [sp_id, 'Rejected By SP', 'Cancelled by Customer', 'cancelled by estimate']; 
   
       // if (q) { // This is for search functionality
       //   queryText += ' AND (name ILIKE $2 OR email ILIKE $2 OR role ILIKE $2 OR status ILIKE $2 OR mobile ILIKE $2  )';

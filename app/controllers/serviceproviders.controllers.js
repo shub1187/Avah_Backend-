@@ -39,7 +39,8 @@ const {
     createEstimate,
     getAllEstimate,
     spApprovalOfCustAppointment,
-    getAllPendingAppointment
+    getAllPendingAppointment,
+    getAllRejectedAndCancelledAppointment
 } = require("../models/serviceprovider.models.js");
 const {
     sign
@@ -69,7 +70,7 @@ module.exports = {
             if (err)
                 res.status(500).send({
                     error: true,
-                    message: results || "Something Went wrong. Please try again later",
+                    message:"Something Went wrong. Please try again later",
                 });
             else {
                 console.log("ln 69 sp login controller",results.rows[0] )
@@ -86,6 +87,8 @@ module.exports = {
                     data: results,
                     token: jsontoken,
                     role: results.rows[0].role,
+                    profile_name : results.rows[0].name,
+                    message : `${ results.rows[0].name} You have logged in successfully`,
                     TYPE_OF_USER : 2,// for service provider dashboard.
                     sp_id :  results.rows[0].sp_id
                 });
@@ -160,7 +163,7 @@ module.exports = {
     spApprovalOfCustAppointment: (req, res) => {
         spApprovalOfCustAppointment(req, (err, results) => {
           if (err) {
-            res.status(500).send({
+            res.status(200).send({
               error: true,
               message: results || "Something Went wrong. Please try again later",
             });
@@ -317,6 +320,22 @@ module.exports = {
                     message: results || "Something Went wrong. Please try again later",
                 });
             else
+                res.send({
+                    error: false,
+                    message: "success",
+                    data: results,
+                });
+        });
+    },
+    getAllRejectedAndCancelledAppointment: (req, res) => {
+        getAllRejectedAndCancelledAppointment(req, (err, results) => {
+            if (err)
+                res.status(500).send({
+                    error: true,
+                    message: results || "Something Went wrong. Please try again later",
+                });
+            else
+            console.log(" ln 338", results)
                 res.send({
                     error: false,
                     message: "success",

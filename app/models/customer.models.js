@@ -125,10 +125,11 @@ module.exports = {
               const name = result.rows[0].name;
       
               // Now, insert vehicle details using the fetched customer_id
-              const vehicleQuery = 'INSERT INTO customer_vehicle_data (customer_id, vehicle_number, vehicle_type, brand, model, customization, fuel_type, registration_number,name,full_address,email,mobile_number) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *';
-              const vehicleValues = [customer_id, body.vehicle_number, body.vehicle_type, body.brand, body.model, body.customization, body.fuel_type, body.registration_number,name,full_address,email,mobile_number];
+              const vehicleQuery = 'INSERT INTO customer_vehicle_data (customer_id, vehicle_number, vehicle_type, brand, model, customization, fuel_type, chassis_number,name,full_address,email,mobile_number) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *';
+              const vehicleValues = [customer_id, body.vehicle_number, body.vehicle_type, body.brand, body.model, body.customization, body.fuel_type, body.chassis_number,name,full_address,email,mobile_number];
               client.query(vehicleQuery, vehicleValues, (err, result) => {
                 if (err) {
+                  console.log('ln 132', err)
                   if (err.code === '23505') {
                     return callback(true, `${name}, vehicle registration failed because the vehicle with vehicle number  ${body.vehicle_number} has already been registered`);
                   } else {
@@ -389,162 +390,6 @@ module.exports = {
           return callback(true, error.message);
         }
       },
-      // Testing this is old code 
-      // getAllSpDetailsAsPerCustomerCity: async (req, callback) => {
-      //   try {
-      //     const { city, state } = req.query;
-      //     const query = 'SELECT business_name, sp_id, business_address FROM approved_service_providers WHERE city = $1 AND state = $2';
-      //     const values = [city, state];
-      
-      //     const data = await new Promise((resolve) => {
-      //       client.query(query, values, (err, result) => {
-      //         if (err) {
-      //           return callback(true, 'There are no service providers in your city');
-      //         } else if (result.rows.length > 0) {
-      //           const groupedData = {};
-      //           result.rows.forEach((row) => {
-      //             const location = `${city} (${state})`;
-      //             if (!groupedData[location]) {
-      //               groupedData[location] = { location, ListofServiceProviders: [] };
-      //             }
-      //             const serviceProvider = {
-      //               spDetails: {
-      //                 name: row.business_name,
-      //                 address: row.business_address,
-      //               },
-      //             };
-      //             groupedData[location].ListofServiceProviders.push(serviceProvider);
-      //           });
-      
-      //           const resulte = Object.values(groupedData);
-      //           return callback(false, resulte);
-      //         } else {
-      //           return callback(true, 'There are no service providers in your city');
-      //         }
-      //       });
-      //     });
-      //   } catch (error) {
-      //     return callback(true, error.message);
-      //   }
-      // },
-
-
-      // Test - 02
-      // getAllSpDetailsAsPerCustomerCity: async (req, callback) => {
-      //   try {
-      //     const queryForCities = 'SELECT DISTINCT city, state FROM approved_service_providers WHERE city IS NOT NULL AND state IS NOT NULL';
-          
-      //     const cityStateData = await new Promise((resolve) => {
-      //       client.query(queryForCities, (err, result) => {
-      //         if (err) {
-      //           return callback(true, 'Error fetching cities and states');
-      //         } else if (result.rows.length > 0) {
-      //           return resolve(result.rows);
-      //         } else {
-      //           return callback(true, 'No cities and states found in the database');
-      //         }
-      //       });
-      //     });
-      
-      //     const resulte = [];
-      
-      //     for (const { city, state } of cityStateData) {
-      //       const queryForServiceProviders = 'SELECT sp_id,business_name, business_address FROM approved_service_providers WHERE city = $1 AND state = $2 AND sp_status <> $3';
-      //       const values = [city, state, 'inactive'];
-      
-      //       const serviceProviderData = await new Promise((resolve) => {
-      //         client.query(queryForServiceProviders, values, (err, result) => {
-      //           if (err) {
-      //             return callback(true, `Error fetching service providers for ${city}, ${state}`);
-      //           } else if (result.rows.length > 0) {
-      //             const location = `${city} (${state})`;
-      //             const locationObject = {
-      //               location,
-      //               ListofServiceProviders: result.rows.map(row => ({
-      //                 spDetails: {
-      //                   sp_id : row.sp_id,
-      //                   name: row.business_name,
-      //                   value : row.business_name,
-      //                   address: row.business_address,
-      //                 },
-      //               })),
-      //             };
-      //             resulte.push(locationObject);
-      //             resolve();
-      //           }
-      //         });
-      //       });
-      //     }
-      
-      //     if (resulte.length > 0) {
-      //       return callback(false, resulte);
-      //     } else {
-      //       return callback(true, 'No active service providers found in the database');
-      //     }
-      //   } catch (error) {
-      //     return callback(true, error.message);
-      //   }
-      // },
-      
-
-      // Test - 03
-
-      // getAllSpDetailsAsPerCustomerCity: async (req, callback) => {
-      //   try {
-      //     const queryForCities =
-      //       'SELECT DISTINCT city, state FROM approved_service_providers WHERE city IS NOT NULL AND state IS NOT NULL';
-      
-      //     const cityStateData = await new Promise((resolve) => {
-      //       client.query(queryForCities, (err, result) => {
-      //         if (err) {
-      //           return callback(true, 'Error fetching cities and states');
-      //         } else if (result.rows.length > 0) {
-      //           return resolve(result.rows);
-      //         } else {
-      //           return callback(true, 'No cities and states found in the database');
-      //         }
-      //       });
-      //     });
-      
-      //     const resulte = {};
-      
-      //     for (const { city, state } of cityStateData) {
-      //       const queryForServiceProviders =
-      //         'SELECT sp_id, business_name, business_address FROM approved_service_providers WHERE city = $1 AND state = $2 AND sp_status <> $3';
-      //       const values = [city, state, 'inactive'];
-      
-      //       const serviceProviderData = await new Promise((resolve) => {
-      //         client.query(queryForServiceProviders, values, (err, result) => {
-      //           if (err) {
-      //             return callback(
-      //               true,
-      //               `Error fetching service providers for ${city}, ${state}`
-      //             );
-      //           } else if (result.rows.length > 0) {
-      //             const location = `${city} (${state})`;
-      //             resulte[location] = result.rows.map((row) => ({
-      //               sp_id: row.sp_id,
-      //               label: row.business_name,
-      //               value: row.business_name,
-      //               address: row.business_address,
-      //             }));
-      //             resolve();
-      //           }
-      //         });
-      //       });
-      //     }
-      
-      //     if (Object.keys(resulte).length > 0) {
-      //       return callback(false, { data: resulte });
-      //     } else {
-      //       return callback(true, 'No active service providers found in the database');
-      //     }
-      //   } catch (error) {
-      //     return callback(true, error.message);
-      //   }
-      // },
-      
-
       // Test - 04
 
       getAllSpDetailsAsPerCustomerCity: async (req, callback) => {
@@ -568,7 +413,7 @@ module.exports = {
       
           for (const { city, state } of cityStateData) {
             const queryForServiceProviders =
-              'SELECT sp_id, business_name, business_address FROM approved_service_providers WHERE city = $1 AND state = $2 AND sp_status <> $3';
+              'SELECT sp_id, business_name, business_address,business_contact FROM approved_service_providers WHERE city = $1 AND state = $2 AND sp_status <> $3';
             const values = [city, state, 'inactive'];
       
             const serviceProviderData = await new Promise((resolve) => {
@@ -585,6 +430,7 @@ module.exports = {
                     label: row.business_name,
                     value: row.business_name,
                     address: row.business_address,
+                    sp_mobile : row.business_contact
                   }));
                   resolve();
                 }
@@ -664,7 +510,7 @@ module.exports = {
           console.log("ln 389", sp_id,business_name)
       
           const getSpDetails = {
-            text: 'SELECT sp_id, business_name, full_address FROM approved_service_providers WHERE sp_id = $1 AND business_name = $2',
+            text: 'SELECT sp_id, business_name, full_address,business_contact FROM approved_service_providers WHERE sp_id = $1 AND business_name = $2',
             values: [sp_id,business_name],
           };
       
@@ -689,8 +535,8 @@ module.exports = {
         try {
           var body = req.body
           console.log("ln 691", body)
-          const query = 'INSERT INTO appointment (customer_id,sp_id,name,business_name,vehicle_number,vehicle_type, brand,model,fuel_type, email, mobile_number, pickup_drop,pickup_address,appointment_date,appointment_time,appointment_status,has_customer_cancelled,has_sp_cancelled,jobcard_status,cust_cancellation_note,sp_cancellation_note,is_reschedule_allowed,customization,has_sp_rejected,sp_rejection_note) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25) RETURNING *';
-          const values = [body.customer_id,body.sp_id,body.name,body.business_name,body.vehicle_number,body.vehicle_type, body.brand,body.model,body.fuel_type, body.email, body.mobile_number, body.pickup_drop,body.pickup_address,body.appointment_date,body.appointment_time,"pending",false,false,"pending",null,null,false,body.customization,false,null];
+          const query = 'INSERT INTO appointment (customer_id,sp_id,name,business_name,vehicle_number,vehicle_type, brand,model,fuel_type, email, mobile_number, pickup_drop,pickup_address,appointment_date,appointment_time,appointment_status,has_customer_cancelled,has_sp_cancelled,jobcard_status,cust_cancellation_note,sp_cancellation_note,is_reschedule_allowed,customization,has_sp_rejected,sp_rejection_note,estimate_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26) RETURNING *';
+          const values = [body.customer_id,body.sp_id,body.name,body.business_name,body.vehicle_number,body.vehicle_type, body.brand,body.model,body.fuel_type, body.email, body.mobile_number, body.pickup_drop,body.pickup_address,body.appointment_date,body.appointment_time,"Pending",false,false,"Pending",null,null,false,body.customization,false,null,'Pending'];
           
           const data = await new Promise((resolve) => {
             client.query(query, values, (err, result) => {
@@ -713,7 +559,7 @@ module.exports = {
           var body = req.body
           console.log("ln 691", body)
           const query = 'UPDATE appointment SET appointment_status = $1, has_customer_cancelled =$2, cust_cancellation_note =$3 WHERE appointment_id = $4 AND jobcard_status = $5  RETURNING *';
-          const values = ['cancelled',true,body.cust_cancellation_note,body.appointment_id,'pending'];
+          const values = ['cancelled',true,body.cust_cancellation_note,body.appointment_id,'Pending'];
           
           const data = await new Promise((resolve) => {
             client.query(query, values, (err, result) => {
@@ -730,5 +576,85 @@ module.exports = {
           return callback(true, error.message);
         }
       },
+
+      getAllPendingApprovedAppointment: async (req, callback) => {
+        try {
+          console.log("Entered 1573 pending Appointment")
+          const { customer_id, q, _page, _limit } = req.query;
+          let queryText = 'SELECT appointment_id,customer_id,sp_id,vehicle_number,vehicle_type,brand,model,fuel_type,pickup_drop,pickup_address,appointment_time,appointment_status,jobcard_status,customization,estimate_status,appointment_date,sp_name,sp_address,sp_email,sp_contact,sp_rejection_note,cust_cancellation_note,sp_cancellation_note FROM appointment_details WHERE customer_id = $1 AND (appointment_status = $2 OR appointment_status = $3)';
+          const queryParams = [customer_id, 'Approved', 'Pending'];
+      
+          if (q) { // This is for search functionality
+            queryText += ' AND (sp_name ILIKE $4 OR vehicle_number ILIKE $4 OR vehicle_type ILIKE $4 OR appointment_status ILIKE $4)';
+            queryParams.push(`%${q}%`);
+          }
+      
+          const getall_employee = {
+            text: queryText,
+            values: queryParams,
+          };
+      
+          const data = await new Promise((resolve) => {
+            client.query(getall_employee, (err, result) => {
+              if (err) {
+                console.log(err);
+                return callback(true, "Unable to fetch the pending and approved appointment details");
+              } else {
+                // const results = {
+                //   results: result.rows,
+                //   pagination: {
+                //     currentPage: parseInt(_page) || 1,
+                //     totalPages: 1,
+                //     totalRows: result.rowCount.toString(),
+                //   },
+                // };
+                return callback(false, result.rows);
+              }
+            });
+          });
+        } catch (e) {
+          return callback(true, e.message);
+        }
+      },
+
+      getAllRejectedCancelledAppointment: async (req, callback) => {
+        try {
+          console.log("Entered 1573 pending Appointment")
+          const { customer_id, q, _page, _limit } = req.query;
+          let queryText = 'SELECT appointment_id,customer_id,sp_id,vehicle_number,vehicle_type,brand,model,fuel_type,pickup_drop,pickup_address,appointment_time,appointment_status,jobcard_status,customization,estimate_status,appointment_date,sp_name,sp_address,sp_email,sp_contact,sp_rejection_note,cust_cancellation_note,sp_cancellation_note FROM appointment_details WHERE customer_id = $1 AND (appointment_status = $2 OR appointment_status = $3)';
+          const queryParams = [customer_id, 'Rejected By SP', 'Cancelled By Customer'];
+      
+          if (q) { // This is for search functionality
+            queryText += ' AND (sp_name ILIKE $4 OR vehicle_number ILIKE $4 OR vehicle_type ILIKE $4 OR appointment_status ILIKE $4)';
+            queryParams.push(`%${q}%`);
+          }
+      
+          const getall_employee = {
+            text: queryText,
+            values: queryParams,
+          };
+      
+          const data = await new Promise((resolve) => {
+            client.query(getall_employee, (err, result) => {
+              if (err) {
+                console.log(err);
+                return callback(true, "Unable to fetch the pending and approved appointment details");
+              } else {
+                // const results = {
+                //   results: result.rows,
+                //   pagination: {
+                //     currentPage: parseInt(_page) || 1,
+                //     totalPages: 1,
+                //     totalRows: result.rowCount.toString(),
+                //   },
+                // };
+                return callback(false, result.rows);
+              }
+            });
+          });
+        } catch (e) {
+          return callback(true, e.message);
+        }
+      }
 
 }

@@ -16,6 +16,8 @@ const {
     get_customer_vehicle_numbers,
     getAllSpDetailsAsPerCustomerCity,
     cancelAppointment,
+    getAllPendingApprovedAppointment,
+    getAllRejectedCancelledAppointment
 } = require("../models/customer.models.js")
 
 const {
@@ -62,7 +64,7 @@ module.exports = {
                     message: `${results.rows[0].name} you have logged in successfully`,
                     // data: results.rows[0],
                     customer_id : results.rows[0].customer_id,
-                    cust_name: results.rows[0].name,
+                    profile_name: results.rows[0].name, // To show in UI
                     customer_email :  results.rows[0].email,
                     token: jsontoken,
                     TYPE_OF_USER : 3,// for customer dashboard.
@@ -94,7 +96,7 @@ module.exports = {
         vehicleRegistration: (req, res) => {
             vehicleRegistration(req, (err, results) => {
                 if (err)
-                    res.status(500).send({
+                    res.status(200).send({
                         error: true,
                         message: results || "Something Went wrong. Please try again later",
                     });
@@ -137,9 +139,14 @@ module.exports = {
                 else {     
                     res.send({
                         error: false,
-                        result : results,
+                        results : results,
                         // message: `${results.name} your profile has been updated successfully`,
                     });
+
+                    // res.send({
+                    //     error: false,
+                    //     data : results
+                    // });
                 }
             });
         },
@@ -311,6 +318,36 @@ module.exports = {
                     res.send({
                         error: false,
                         message: results,
+                    });
+            });
+        },
+        getAllPendingApprovedAppointment: (req, res) => {
+            getAllPendingApprovedAppointment(req, (err, results) => {
+                if (err)
+                    res.status(500).send({
+                        error: true,
+                        message: results || "Something Went wrong. Please try again later",
+                    });
+                else
+                    res.send({
+                        error: false,
+                        results : results
+                    });
+            });
+        },
+        getAllRejectedCancelledAppointment: (req, res) => {
+            getAllRejectedCancelledAppointment(req, (err, results) => {
+                if (err)
+                    res.status(500).send({
+                        error: true,
+                        message: results || "Something Went wrong. Please try again later",
+                    });
+                else
+                    res.send({
+                        error: false,
+                        results : results,
+                        message : 'This is dummy test message',
+                        status_code : 200
                     });
             });
         },
