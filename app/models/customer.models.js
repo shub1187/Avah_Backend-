@@ -1,5 +1,5 @@
 const {Client} = require('pg');
-
+const multer = require('multer');
 const client =  new Client ({
     host: "localhost",
     port: 5432,  
@@ -271,7 +271,7 @@ module.exports = {
         try {
           console.log("Entered ln 197: get_profile_data", req)
           // Construct a SQL query to search for vehicles based on the partial vehicle number
-          const query = 'SELECT name,email,full_address,mobile_number FROM customer_registration  WHERE email = $1';
+          const query = 'SELECT name,email,full_address,mobile_number,profile_image FROM customer_registration  WHERE email = $1';
           const values = [req.body.email]; // Use '%' to match any characters after the entered partial number
           console.log("ln 198",query)
           let button_name = ""
@@ -295,6 +295,7 @@ module.exports = {
                   email : result.rows[0].email,
                   address : result.rows[0].full_address,
                   mobile_number : result.rows[0].mobile_number,
+                  profile_image : result.rows[0].profile_image,
                   button_name : button_name
                 }
 
@@ -534,7 +535,7 @@ module.exports = {
       createAppointment:async (req, callback) => { //creates appointment
         try {
           var body = req.body
-          console.log("ln 691", body)
+          // console.log("ln 691", body)
           const query = 'INSERT INTO appointment (customer_id,sp_id,name,business_name,vehicle_number,vehicle_type, brand,model,fuel_type, email, mobile_number, pickup_drop,pickup_address,appointment_date,appointment_time,appointment_status,has_customer_cancelled,has_sp_cancelled,jobcard_status,cust_cancellation_note,sp_cancellation_note,is_reschedule_allowed,customization,has_sp_rejected,sp_rejection_note,estimate_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26) RETURNING *';
           const values = [body.customer_id,body.sp_id,body.name,body.business_name,body.vehicle_number,body.vehicle_type, body.brand,body.model,body.fuel_type, body.email, body.mobile_number, body.pickup_drop,body.pickup_address,body.appointment_date,body.appointment_time,"Pending",false,false,"Pending",null,null,false,body.customization,false,null,'Pending'];
           
@@ -544,7 +545,7 @@ module.exports = {
                 console.error('Error in customer creating Appointment:', err);
                 return callback(true, 'Appointment creation failed');
               }
-              console.log('Appointment created successfully!');
+              // console.log('Appointment created successfully!', result.rows);
               return callback(false, result.rows);
             });
           });
@@ -581,7 +582,7 @@ module.exports = {
         try {
           console.log("Entered 1573 pending Appointment")
           const { customer_id, q, _page, _limit } = req.query;
-          let queryText = 'SELECT appointment_id,customer_id,sp_id,vehicle_number,vehicle_type,brand,model,fuel_type,pickup_drop,pickup_address,appointment_time,appointment_status,jobcard_status,customization,estimate_status,appointment_date,sp_name,sp_address,sp_email,sp_contact,sp_rejection_note,cust_cancellation_note,sp_cancellation_note FROM appointment_details WHERE customer_id = $1 AND (appointment_status = $2 OR appointment_status = $3)';
+          let queryText = 'SELECT appointment_id,customer_id,sp_id,vehicle_number,vehicle_type,brand,model,fuel_type,pickup_drop,pickup_address,appointment_time,appointment_status,jobcard_status,customization,estimate_status,appointment_date,sp_name,sp_address,sp_email,sp_contact,sp_rejection_note,cust_cancellation_note,sp_cancellation_note,estimate_number FROM appointment_details WHERE customer_id = $1 AND (appointment_status = $2 OR appointment_status = $3)';
           const queryParams = [customer_id, 'Approved', 'Pending'];
       
           if (q) { // This is for search functionality
@@ -655,6 +656,61 @@ module.exports = {
         } catch (e) {
           return callback(true, e.message);
         }
+      },
+
+     
+
+
+// Assuming 'client' is your PostgreSQL client
+
+profile_completion_with_image: async (req, callback) => {
+const storage = multer.memoryStorage(); // Using memory storage for multer
+const upload = multer({ storage: storage }).single('image'); // 'image' is the key name for the image file in the form data
+  try {
+    upload(req, null, async (err) => {
+      if (err instanceof multer.MulterError) {
+        // A Multer error occurred when uploading
+        return callback(true, 'Image upload failed');
+      } else if (err) {
+        // An unknown error occurred when uploading
+        return callback(true, 'Something went wrong');
       }
+
+      try {
+        var body = req.body;
+        
+        // Calculate the full_address by concatenating address, city, state, and pin_code
+        const full_address = `${body.address} ${body.city} ${body.state} ${body.pin_code}`;
+        
+        // Define the SQL query to update the profile with the image data
+        const query = 'UPDATE customer_registration SET address = $1, city = $2, state = $3, pin_code = $4, full_address = $5, mobile_number = $6, profile_image = $7 WHERE email = $8 RETURNING name, email';
+        
+        const values = [body.address, body.city, body.state, body.pin_code, full_address, body.mobile_number, req.file.buffer, body.email]; // req.file.buffer contains the image data
+        
+        const data = await new Promise((resolve) => {
+          client.query(query, values, (err, result) => {
+            if (err) {
+              return callback(true, 'Profile Updation failed');
+            } else {
+              if (result.rows.length > 0) {
+                console.log(result.rows[0])
+                // Profile updated successfully
+                return callback(false, result.rows[0]);
+              } else {
+                // No matching email found
+                return callback(true, 'Email not found');
+              }
+            }
+          });
+        });
+      } catch (error) {
+        return callback(true, error.message);
+      }
+    });
+  } catch (error) {
+    return callback(true, error.message);
+  }
+}
+
 
 }

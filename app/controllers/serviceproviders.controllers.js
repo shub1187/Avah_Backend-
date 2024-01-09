@@ -30,17 +30,37 @@ const {
     updateSpareActive,
     getUserVehicleSearch,
     createLabour,
-    getAllLabour,
+  
     getLabourById,
     updateLabourDetail,
     updateLabourActive,
-    deleteLabour,
     getLabourSearch,
     createEstimate,
     getAllEstimate,
     spApprovalOfCustAppointment,
     getAllPendingAppointment,
-    getAllRejectedAndCancelledAppointment
+    getAllRejectedAndCancelledAppointment,
+    addSpares,
+    addLabour,
+    getAllSpares,
+    getAllLabour,
+    deleteLabour,
+    addEstimate,
+    getEstimateDetails,
+    editEstimate,
+    getEstimatePendingVehcileList,
+    getAllLabourListForAutoFill,
+    getAllSpareListForAutoFill,
+    getSpecificSpareDetailsForEstimate,
+    getSpecificLabourDetailsForEstimate,
+    getSpecificVechicleDetailsToCreateEstimate,
+    getAllCreatedEstimateList,
+    addEmployeeRole,
+    getAllEmployeeRoles,
+    getAllPermissionPerRoles,
+    getNotificationNumbers,
+    deleteEmployeeRole,
+    editEmployeeRole
 } = require("../models/serviceprovider.models.js");
 const {
     sign
@@ -84,13 +104,16 @@ module.exports = {
                 res.send({
                     error: false,
                     message: "success",
-                    data: results,
+                    // data: results,
                     token: jsontoken,
                     role: results.rows[0].role,
+                    designation: results.rows[0].designation,
                     profile_name : results.rows[0].name,
-                    message : `${ results.rows[0].name} You have logged in successfully`,
-                    TYPE_OF_USER : 2,// for service provider dashboard.
-                    sp_id :  results.rows[0].sp_id
+                    message : `${ results.rows[0].name}  have logged in successfully with a role of ${results.rows[0].role}`,
+                    TYPE_OF_USER : `${ results.rows[0].user_type}`,
+                    sp_id :  results.rows[0].sp_id,
+                    business_name : results.rows[0].business_name,
+                    permission_granted :  results.rows[0].permission_granted
                 });
             }
         });
@@ -651,40 +674,6 @@ module.exports = {
         });
     },
 
-    getAllLabour: (req, res) => {
-        getAllLabour(req, (err, results) => {
-            if (err)
-                res.status(500).send({
-                    error: true,
-                    message: "Something Went wrong. Please try again later",
-                    errorLog: results
-                });
-            else
-                res.send({
-                    error: false,
-                    message: "success",
-                    data: results,
-                });
-        });
-    },
-
-    getLabourById: (req, res) => {
-        getLabourById(req, (err, results) => {
-            if (err)
-                res.status(500).send({
-                    error: true,
-                    message: "Something Went wrong. Please try again later",
-                    errorLog: results
-                });
-            else
-                res.send({
-                    error: false,
-                    message: "success",
-                    data: results,
-                });
-        });
-    },
-
     updateLabourDetail: (req, res) => {
         updateLabourDetail(req, (err, results) => {
             if (err)
@@ -701,24 +690,6 @@ module.exports = {
                 });
         });
     },
-
-    deleteLabour: (req, res) => {
-        deleteLabour(req, (err, results) => {
-            if (err)
-                res.status(500).send({
-                    error: true,
-                    message: "Something Went wrong. Please try again later",
-                    errorLog: results
-                });
-            else
-                res.send({
-                    error: false,
-                    message: "success",
-                    data: results,
-                });
-        });
-    },
-
     getLabourSearch: (req, res) => {
         getLabourSearch(req, (err, results) => {
             if (err)
@@ -752,5 +723,407 @@ module.exports = {
                 });
         });
     },
+
+    // Service provider adding his spares 
+    addSpares: (req, res) => {
+        addSpares(req, (err, results) => {
+            if (err)
+                res.status(200).send({
+                    error: true,
+                    message: results || "Something Went wrong. Please try again later",
+                });
+            else {
+                // console.log("customer controller ln 52",results)
+                res.send({
+                    error: false,
+                    message: `Spare name ${results[0].spare_name} added to the system successfully`,
+                    // data: results
+                });
+            }
+        });
+    },
+
+        // Service provider adding his labour
+        addLabour: (req, res) => {
+            addLabour(req, (err, results) => {
+                if (err)
+                    res.status(200).send({
+                        error: true,
+                        message: results || "Something Went wrong. Please try again later",
+                    });
+                else {
+                    // console.log("customer controller ln 52",results)
+                    res.send({
+                        error: false,
+                        message: `Labour name ${results[0].labour_name} added to the system successfully`,
+                        // data: results
+                    });
+                }
+            });
+        },
+
+        getAllSpares: (req, res) => {
+            getAllSpares(req, (err, results) => {
+                if (err)
+                    res.status(200).send({
+                        error: true,
+                        message: results || "Something Went wrong. Please try again later",
+                    });
+                else {
+                    // console.log("customer controller ln 52",results)
+                    res.send({
+                        error: false,
+                        // message: `Spare name ${results[0].labour_name} added to the system successfully`,
+                        data: results
+                    });
+                }
+            });
+        },
+
+        getAllLabour: (req, res) => {
+            getAllLabour(req, (err, results) => {
+                if (err)
+                    res.status(200).send({
+                        error: true,
+                        message: results || "Something Went wrong. Please try again later",
+                    });
+                else {
+                    // console.log("customer controller ln 52",results)
+                    res.send({
+                        error: false,
+                        // message: `Spare name ${results[0].labour_name} added to the system successfully`,
+                        data: results
+                    });
+                }
+            });
+        },
+
+        deleteLabour: (req, res) => {
+            deleteLabour(req, (err, results) => {
+                if (err)
+                    res.status(200).send({
+                        error: true,
+                        message: results || "Something Went wrong. Please try again later",
+                    });
+                else {
+                    // console.log("customer controller ln 52",results)
+                    res.send({
+                        error: false,
+                        message: `Labour name ${results.labour_name} deleted from the system successfully`,
+                        // data: results
+                    });
+                }
+            });
+        },
+
+        deleteSpare: (req, res) => {
+            deleteSpare(req, (err, results) => {
+                if (err)
+                    res.status(200).send({
+                        error: true,
+                        message: results || "Something Went wrong. Please try again later",
+                    });
+                else {
+                    // console.log("customer controller ln 52",results)
+                    res.send({
+                        error: false,
+                        message: `Spare name ${results.spare_name} deleted from the system successfully`,
+                        // data: results
+                    });
+                }
+            });
+        },
+
+        addEstimate: (req, res) => {
+            addEstimate(req, (err, results) => {
+                if (err)
+                    res.status(200).send({
+                        error: true,
+                        message: results || "Something Went wrong. Please try again later",
+                    });
+                else {
+                    console.log("LN 827 SP  controller",results)
+                    res.send({
+                        error: false,
+                        message: `Estimate created successfully`,
+                        data: results
+                    });
+                }
+            });
+        },
+
+        getEstimateDetails: (req, res) => {
+            getEstimateDetails(req, (err, results) => {
+                if (err)
+                    res.status(200).send({
+                        error: true,
+                        message: results || "Something Went wrong. Please try again later",
+                    });
+                else {
+                    console.log("LN 827 SP  controller",results)
+                    res.send({
+                        error: false,
+                        message: 'Estimate details retrieved successfully',
+                        data: results
+                    });
+                }
+            });
+        },
+
+        editEstimate: (req, res) => {
+            editEstimate(req, (err, results) => {
+                if (err)
+                    res.status(200).send({
+                        error: true,
+                        message: results || "Something Went wrong. Please try again later",
+                    });
+                else {
+                    // console.log("LN 865 SP  controller",results)
+                    res.send({
+                        error: false,
+                        message: `Estimate edited successfully`,
+                        data: results
+                    });
+                }
+            });
+        },
+
+        getEstimatePendingVehcileList: (req, res) => {
+            getEstimatePendingVehcileList(req, (err, results) => {
+                if (err)
+                    res.status(200).send({
+                        error: true,
+                        message: results || "Something Went wrong. Please try again later",
+                    });
+                else {
+                    console.log("LN 865 SP  controller",results)
+                    res.send({
+                        error: false,
+                        message: `List of Penidng Estimate vehicles fetched successfully`,
+                        data: results
+                    });
+                }
+            });
+        },
+
+        getAllLabourListForAutoFill: (req, res) => {
+            getAllLabourListForAutoFill(req, (err, results) => {
+                if (err)
+                    res.status(200).send({
+                        error: true,
+                        message: results || "Something Went wrong. Please try again later",
+                    });
+                else {
+                    console.log("LN 903 SP  controller",results)
+                    res.send({
+                        error: false,
+                        message: `List of Autofill labour fetched successfully`,
+                        data: results
+                    });
+                }
+            });
+        },
+
+        getAllSpareListForAutoFill: (req, res) => {
+            getAllSpareListForAutoFill(req, (err, results) => {
+                if (err)
+                    res.status(200).send({
+                        error: true,
+                        message: results || "Something Went wrong. Please try again later",
+                    });
+                else {
+                    console.log("LN 903 SP  controller",results)
+                    res.send({
+                        error: false,
+                        message: `List of Autofill Spares fetched successfully`,
+                        data: results
+                    });
+                }
+            });
+        },
+
+        getSpecificSpareDetailsForEstimate: (req, res) => {
+            getSpecificSpareDetailsForEstimate(req, (err, results) => {
+                if (err)
+                    res.status(200).send({
+                        error: true,
+                        message: results || "Something Went wrong. Please try again later",
+                    });
+                else {
+                    console.log("LN 942 SP  controller",results)
+                    res.send({
+                        error: false,
+                        message: `Spares details fetched successfully`,
+                        data: results
+                    });
+                }
+            });
+        },
+
+        getSpecificLabourDetailsForEstimate: (req, res) => {
+            getSpecificLabourDetailsForEstimate(req, (err, results) => {
+                if (err)
+                    res.status(200).send({
+                        error: true,
+                        message: results || "Something Went wrong. Please try again later",
+                    });
+                else {
+                    console.log("LN 903 SP  controller",results)
+                    res.send({
+                        error: false,
+                        message: `Labour details fetched successfully`,
+                        data: results
+                    });
+                }
+            });
+        },
+
+        
+        getSpecificVechicleDetailsToCreateEstimate: (req, res) => {
+            getSpecificVechicleDetailsToCreateEstimate(req, (err, results) => {
+                if (err)
+                    res.status(200).send({
+                        error: true,
+                        message: results || "Something Went wrong. Please try again later",
+                    });
+                else {
+                    console.log("LN 980 SP  controller",results)
+                    res.send({
+                        error: false,
+                        message: `Vehicle details fetched successfully`,
+                        data: results
+                    });
+                }
+            });
+        },
+
+        getAllCreatedEstimateList: (req, res) => {
+            getAllCreatedEstimateList(req, (err, results) => {
+                if (err)
+                    res.status(200).send({
+                        error: true,
+                        message: results || "Something Went wrong. Please try again later",
+                    });
+                else {
+                    console.log("LN 999 SP  controller",results)
+                    res.send({
+                        error: false,
+                        message: `Vehicle details fetched successfully`,
+                        data: results
+                    });
+                }
+            });
+        },
+
+        addEmployeeRole: (req, res) => {
+            addEmployeeRole(req, (err, results) => {
+                if (err)
+                    res.status(200).send({
+                        error: true,
+                        message: results || "Something Went wrong. Please try again later",
+                    });
+                else {
+                    console.log("LN 1019 SP  controller",results)
+                    res.send({
+                        error: false,
+                        message: `New Employee role that is ${results[0].role_name} added to the system successfully`,
+                        data: results
+                    });
+                }
+            });
+        },
+
+        getAllEmployeeRoles: (req, res) => {
+            getAllEmployeeRoles(req, (err, results) => {
+                if (err)
+                    res.status(200).send({
+                        error: true,
+                        message: results || "Something Went wrong. Please try again later",
+                    });
+                else {
+                    console.log("LN 1038 SP  controller",results)
+                    res.send({
+                        error: false,
+                        message: `Employee roles fetched successfully`,
+                        data: results
+                    });
+                }
+            });
+        },
+
+        getAllPermissionPerRoles: (req, res) => {
+            getAllPermissionPerRoles(req, (err, results) => {
+                if (err)
+                    res.status(200).send({
+                        error: true,
+                        message: results || "Something Went wrong. Please try again later",
+                    });
+                else {
+                    console.log("LN 1038 SP  controller",results)
+                    res.send({
+                        error: false,
+                        message: `Permissions per  role fetched successfully`,
+                        data: results
+                    });
+                }
+            });
+        },
+
+        getNotificationNumbers: (req, res) => {
+            getNotificationNumbers(req, (err, results) => {
+                if (err)
+                    res.status(200).send({
+                        error: true,
+                        message: results || "Something Went wrong. Please try again later",
+                    });
+                else {
+                    console.log("LN 1078 SP  controller",results)
+                    res.send({
+                        error: false,
+                        message: `Number of Notifications fetched successfully`,
+                        data: results
+                    });
+                }
+            });
+        },
+
+        deleteEmployeeRole: (req, res) => {
+            deleteEmployeeRole(req, (err, results) => {
+                if (err)
+                    res.status(200).send({
+                        error: true,
+                        message: results || "Something Went wrong. Please try again later",
+                    });
+                else {
+                    // console.log("customer controller ln 52",results)
+                    res.send({
+                        error: false,
+                        message: `Role name ${results.role_name} deleted from the system successfully`
+                    });
+                }
+            });
+        },
+
+        editEmployeeRole: (req, res) => {
+            editEmployeeRole(req, (err, results) => {
+                if (err)
+                    res.status(200).send({
+                        error: true,
+                        message: results || "Something Went wrong. Please try again later",
+                    });
+                else {
+                    // console.log("customer controller ln 52",results)
+                    res.send({
+                        error: false,
+                        message: `Role name ${results.role_name} edited to the system successfully`
+                    });
+                }
+            });
+        },
+
+  
+
+
+
 
 };  

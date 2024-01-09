@@ -21,8 +21,9 @@ module.exports = {
 // Admin Login Super user - Shubham
   login: async (req, callback) => {
     try {
+      console.log("ln 24",req.body)
       const_login_query = {text: 'SELECT * FROM admin WHERE email = $1 AND password = $2 AND role = $3',
-      values: [req.body.username, req.body.password, req.body.role]}
+      values: [req.body.email, req.body.password, req.body.role]}
         const data = await new Promise((resolve) => {
           client.query(
             const_login_query, 

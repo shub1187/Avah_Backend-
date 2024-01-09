@@ -2,6 +2,7 @@ const {
     register,
     login,
     profile_completion,
+    profile_completion_with_image,
     vehicleRegistration,
     vehicle_search,
     get_customer_vehicles,
@@ -17,7 +18,8 @@ const {
     getAllSpDetailsAsPerCustomerCity,
     cancelAppointment,
     getAllPendingApprovedAppointment,
-    getAllRejectedCancelledAppointment
+    getAllRejectedCancelledAppointment,
+   
 } = require("../models/customer.models.js")
 
 const {
@@ -123,7 +125,7 @@ module.exports = {
                     res.send({
                         error: false,
                         result : results,
-                        // message: `${results.name} your profile has been updated successfully`,
+                        message: `Details of vehicle number ${results[0].vehicle_number} fetched successfully`,
                     });
                 }
             });
@@ -249,6 +251,9 @@ module.exports = {
           },
 
           createAppointment: (req, res) => {
+            // /**
+            //  * @param {Object} results - This result will have data what create appointment will return 
+            //  */
             createAppointment(req, (err, results) => {
                 if (err)
                     res.status(500).send({
@@ -258,7 +263,7 @@ module.exports = {
                 else
                     res.send({
                         error: false,
-                        message: "success",
+                        message: `Appointment Created Succesfully for vehicle number ${results[0].vehicle_number} on ${results[0].appointment_date} at  ${results[0].appointment_time}  `,
                         data: results,
                     });
             });
@@ -351,5 +356,24 @@ module.exports = {
                     });
             });
         },
+
+        profile_completion_with_image: (req, res) => {
+            profile_completion_with_image(req, (err, results) => {
+                if (err)
+                    res.status(500).send({
+                        error: true,
+                        message: results || "Something Went wrong. Please try again later",
+                    });
+                else {     
+                    res.send({
+                        error: false,
+                        // result : results,
+                        message: `${results.name} your profile has been updated successfully`,
+                    });
+                }
+            });
+        },
+
+        
 
 }

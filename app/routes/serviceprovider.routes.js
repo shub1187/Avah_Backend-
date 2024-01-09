@@ -21,17 +21,8 @@ const {
     getEmployeeSearch,
     updateEmployeeActive,
     updateEmployeePassword,
-    getAllSpare,
-    createSpare,
-    getSpareById,
-    updateSpareDetail,
-    deleteSpare,
-    getSpareSearch,
-    updateSpareActive,
     getUserVehicleSearch,
     createLabour,
-    getAllLabour,
-    getLabourById,
     updateLabourDetail,
     updateLabourActive,
     deleteLabour,
@@ -40,92 +31,38 @@ const {
     getAllEstimate,
     spApprovalOfCustAppointment,
     getAllPendingAppointment,
-    getAllRejectedAndCancelledAppointment
+    getAllRejectedAndCancelledAppointment,
+    addSpares,
+    addLabour,
+    getAllSpares,
+    getAllLabour,
+    deleteSpare,
+    addEstimate,
+    getEstimateDetails,
+    editEstimate,
+    getEstimatePendingVehcileList,
+    getAllLabourListForAutoFill,
+    getAllSpareListForAutoFill,
+    getSpecificSpareDetailsForEstimate,
+    getSpecificLabourDetailsForEstimate,
+    getSpecificVechicleDetailsToCreateEstimate,
+    getAllCreatedEstimateList,
+    addEmployeeRole,
+    getAllEmployeeRoles,
+    getAllPermissionPerRoles,
+    getNotificationNumbers,
+    deleteEmployeeRole,
+    editEmployeeRole
 } = require("../controllers/serviceproviders.controllers.js");
 const router = require("express").Router();
 const { checkToken } = require("../middlewares/auth_validation");
-
-/**
- * @swagger
- * tags:
- *   name: Service Provider
- *   description: API to manage your books.
- * components:
- *   schemas:
- *     Book:
- *       type: object
- *       required:
- *         - title
- *         - author
- *         - finished
- *       properties:
- *         id:
- *           type: integer
- *           description: The auto-generated id of the book.
- *         title:
- *           type: string
- *           description: The title of your book.
- *         author:
- *           type: string
- *           description: Who wrote the book?
- *         finished:
- *           type: boolean
- *           description: Have you finished reading it?
- *         createdAt:
- *           type: string
- *           format: date
- *           description: The date of the record creation.
- *       example:
- *          title: The Pragmatic Programmer
- *          author: Andy Hunt / Dave Thomas
- *          finished: true
- */
-
-
-/**
- * @swagger
- * /serviceprovider/login:
- *   post:
- *     security: 
- *       - BearerAuth: []
- *     summary: Lists all the books
- *     tags: [Service Provider]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/Book' 
- *     responses:
- *       "200":
- *         description: The list of books.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Book'
- */
 
 //common
 router.post("/login", login);
 
 //user
 
-/**
- * @swagger
- * /serviceprovider/getAllUsers:
- *   get:
- *     security: 
- *       - BearerAuth: []
- *     summary: Lists all the Users
- *     tags: [Service Provider]
- *     responses:
- *       "200":
- *         description: The list of books.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Book'
- */
+
 
 // Registeration Router
 router.post("/registerServiceProvider",register)
@@ -160,26 +97,37 @@ router.get("/getAllRejectedAndCancelledAppointment", checkToken, getAllRejectedA
 router.post("/approveCustAppointment", checkToken, spApprovalOfCustAppointment); // Currently Not in Use
 
 //spares
-router.get("/getAllSpare", checkToken, getAllSpare);
-router.post("/createSpare", checkToken, createSpare);
-router.post("/getSpareById", checkToken, getSpareById);
-router.post("/updateSpareDetail", checkToken, updateSpareDetail);
-router.post("/deleteSpare", checkToken, deleteSpare);
-router.get("/getSpareSearch", checkToken, getSpareSearch);
-router.post("/updateSpareActive", checkToken, updateSpareActive);
+router.post("/addspare",checkToken,addSpares);
+router.get("/getAllSpares",checkToken,getAllSpares),
+router.post("/deleteSpare",checkToken,deleteSpare);
+router.get("/getSpecificSpareDetailsForEstimate",checkToken,getSpecificSpareDetailsForEstimate)
+// Labours 
+router.post("/addLabour",checkToken,addLabour)
+router.get("/getAllLabour",checkToken,getAllLabour)
+router.post("/deleteLabour",checkToken,deleteLabour)
+router.get("/getSpecificLabourDetailsForEstimate",checkToken,getSpecificLabourDetailsForEstimate)
+
+// Roles 
+router.post("/addEmployeeRole",checkToken,addEmployeeRole)
+router.get("/getAllEmployeeRoles",checkToken,getAllEmployeeRoles)
+router.get("/getAllPermissionPerRoles",checkToken,getAllPermissionPerRoles)
+router.post("/deleteEmployeeRole", checkToken, deleteEmployeeRole);
+router.post("/editEmployeeRole", checkToken, editEmployeeRole);
+
 
 //estimate
-router.get("/getUserVehicleSearch", checkToken, getUserVehicleSearch);
-router.post("/createEstimate", checkToken, createEstimate);
-router.get("/getAllEstimate", checkToken, getAllEstimate);
+router.post("/addEstimate", checkToken, addEstimate);
+router.get("/getEstimateDetails", checkToken, getEstimateDetails);
+router.post("/editEstimate", checkToken, editEstimate);
+router.get("/getEstimatePendingVehcileList", checkToken, getEstimatePendingVehcileList);
+router.get("/getAllLabourListForAutoFill", checkToken, getAllLabourListForAutoFill);
+router.get("/getAllSpareListForAutoFill", checkToken, getAllSpareListForAutoFill);
+router.get("/getSpecificVechicleDetailsToCreateEstimate", checkToken, getSpecificVechicleDetailsToCreateEstimate);
+router.get("/getAllCreatedEstimateList", checkToken, getAllCreatedEstimateList);
 
-//labour
-router.post("/createLabour", checkToken, createLabour);
-router.get("/getAllLabour", checkToken, getAllLabour);
-router.post("/getLabourById", checkToken, getLabourById);
-router.post("/updateLabourDetail", checkToken, updateLabourDetail);
-router.post("/deleteLabour", checkToken, deleteLabour);
-router.get("/getLabourSearch", checkToken, getLabourSearch);
-router.post("/updateLabourActive", checkToken, updateLabourActive);
+
+//MISC 
+router.get("/getNotificationNumbers",checkToken,getNotificationNumbers)
+
 
 module.exports = router;
