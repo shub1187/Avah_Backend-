@@ -1,11 +1,9 @@
 const {
     register,
     login,
-    getAllUsers,
-    createUser,
     createAppointment,
     getAllModelPerBrand,
-    getUserById,
+   
     updateUserDetail,
     deleteUser,
     getUserSearch,
@@ -30,8 +28,6 @@ const {
     updateSpareActive,
     getUserVehicleSearch,
     createLabour,
-  
-    getLabourById,
     updateLabourDetail,
     updateLabourActive,
     getLabourSearch,
@@ -60,7 +56,18 @@ const {
     getAllPermissionPerRoles,
     getNotificationNumbers,
     deleteEmployeeRole,
-    editEmployeeRole
+    editEmployeeRole,
+    getAllCreatedJobcardList,
+    getJobcardDetails,
+    updateJobcard,
+    getAllAdminAdvisorEmployee,
+    openJobcard,
+    generateInvoice,
+    getAllPendingPaymentInvoices,
+    recievePayment,
+    getAllPaidInvoices,
+    getAllVehicleList,
+    getSpecificVehicleDetailsForSpAppt
 } = require("../models/serviceprovider.models.js");
 const {
     sign
@@ -118,55 +125,6 @@ module.exports = {
             }
         });
     },
-
-    getAllUsers: (req, res) => {
-        getAllUsers(req, (err, results) => {
-            if (err)
-                res.status(500).send({
-                    error: true,
-                    message: results || "Something Went wrong. Please try again later",
-                });
-            else
-                res.send({
-                    error: false,
-                    message: "success",
-                    data: results,
-                });
-        });
-    },
-
-    createUser: (req, res) => {
-        createUser(req, (err, results) => {
-            if (err)
-                res.status(500).send({
-                    error: true,
-                    message: results || "Something Went wrong. Please try again later",
-                });
-            else
-                res.send({
-                    error: false,
-                    message: "success",
-                    data: results,
-                });
-        });
-    },
-
-    getUserById: (req, res) => {
-        getUserById(req, (err, results) => {
-            if (err)
-                res.status(500).send({
-                    error: true,
-                    message: results || "Something Went wrong. Please try again later",
-                });
-            else
-                res.send({
-                    error: false,
-                    message: "success",
-                    data: results,
-                });
-        });
-    },
-
     updateUserPassword: (req, res) => {
         updateUserPassword(req, (err, results) => {
             if (err)
@@ -377,7 +335,7 @@ module.exports = {
             else
                 res.send({
                     error: false,
-                    message: "success",
+                    message: "Employee added to the system successfully",
                     data: results,
                 });
         });
@@ -1116,6 +1074,205 @@ module.exports = {
                     res.send({
                         error: false,
                         message: `Role name ${results.role_name} edited to the system successfully`
+                    });
+                }
+            });
+        },
+
+        getAllCreatedJobcardList: (req, res) => {
+            getAllCreatedJobcardList(req, (err, results) => {
+                if (err)
+                    res.status(200).send({
+                        error: true,
+                        message: results || "Something Went wrong. Please try again later",
+                    });
+                else {
+                    console.log("Ln 1133 SP  controller",results)
+                    res.send({
+                        error: false,
+                        message: `Jobcard List fetched successfully`,
+                        data: results
+                    });
+                }
+            });
+        },
+
+        getJobcardDetails: (req, res) => {
+            getJobcardDetails(req, (err, results) => {
+                if (err)
+                    res.status(200).send({
+                        error: true,
+                        message: results || "Something Went wrong. Please try again later",
+                    });
+                else {
+                    console.log("Ln 1152 SP  controller",results)
+                    res.send({
+                        error: false,
+                        message: `Jobcard details fetched successfully`,
+                        data: results
+                    });
+                }
+            });
+        },
+
+        updateJobcard: (req, res) => {
+            updateJobcard(req, (err, results) => {
+                if (err)
+                    res.status(200).send({
+                        error: true,
+                        message: results || "Something Went wrong. Please try again later",
+                    });
+                else {
+                    // console.log("LN 865 SP  controller",results)
+                    res.send({
+                        error: false,
+                        message: `Jobcard edited successfully`,
+                        data: results
+                    });
+                }
+            });
+        },
+
+        getAllAdminAdvisorEmployee: (req, res) => {
+            getAllAdminAdvisorEmployee(req, (err, results) => {
+                if (err)
+                    res.status(200).send({
+                        error: true,
+                        message: results || "Something Went wrong. Please try again later",
+                    });
+                else {
+                    // console.log("LN 865 SP  controller",results)
+                    res.send({
+                        error: false,
+                        message: `Admin & Advisor's  List fetched successfully`,
+                        data: results
+                    });
+                }
+            });
+        },
+
+        openJobcard: (req, res) => {
+            openJobcard(req, (err, results) => {
+                if (err)
+                    res.status(200).send({
+                        error: true,
+                        message: results || "Something Went wrong. Please try again later",
+                    });
+                else {
+                    // console.log("LN 865 SP  controller",results)
+                    res.send({
+                        error: false,
+                        message: `Job card opened successfully`,
+                        data: results
+                    });
+                }
+            });
+        },
+
+        generateInvoice: (req, res) => {
+            generateInvoice(req, (err, results) => {
+                if (err)
+                    res.status(200).send({
+                        error: true,
+                        message: results || "Something Went wrong. Please try again later",
+                    });
+                else {
+                    // console.log("LN 865 SP  controller",results)
+                    res.send({
+                        error: false,
+                        message: `Invoice generated successfully`,
+                        data: results
+                    });
+                }
+            });
+        },
+
+        getAllPendingPaymentInvoices: (req, res) => {
+            getAllPendingPaymentInvoices(req, (err, results) => {
+                if (err)
+                    res.status(200).send({
+                        error: true,
+                        message: results || "Something Went wrong. Please try again later",
+                    });
+                else {
+                    // console.log("LN 865 SP  controller",results)
+                    res.send({
+                        error: false,
+                        message: `Pending Invoices fetched successfully`,
+                        data: results
+                    });
+                }
+            });
+        },
+
+
+        recievePayment: (req, res) => {
+            recievePayment(req, (err, results) => {
+                if (err)
+                    res.status(200).send({
+                        error: true,
+                        message: results || "Something Went wrong. Please try again later",
+                    });
+                else {
+                    // console.log("LN 865 SP  controller",results)
+                    res.send({
+                        error: false,
+                        message: `Payment recieved successfully`,
+                        data: results
+                    });
+                }
+            });
+        },
+
+        getAllPaidInvoices: (req, res) => {
+            getAllPaidInvoices(req, (err, results) => {
+                if (err)
+                    res.status(200).send({
+                        error: true,
+                        message: results || "Something Went wrong. Please try again later",
+                    });
+                else {
+                    // console.log("LN 865 SP  controller",results)
+                    res.send({
+                        error: false,
+                        message: `List fetched successfully`,
+                        data: results
+                    });
+                }
+            });
+        },
+
+        getAllVehicleList: (req, res) => {
+            getAllVehicleList(req, (err, results) => {
+                if (err)
+                    res.status(200).send({
+                        error: true,
+                        message: results || "Something Went wrong. Please try again later",
+                    });
+                else {
+                    // console.log("LN 865 SP  controller",results)
+                    res.send({
+                        error: false,
+                        message: `Vehicle List fetched successfully`,
+                        data: results
+                    });
+                }
+            });
+        },
+
+        getSpecificVehicleDetailsForSpAppt: (req, res) => {
+            getSpecificVehicleDetailsForSpAppt(req, (err, results) => {
+                if (err)
+                    res.status(200).send({
+                        error: true,
+                        message: results || "Something Went wrong. Please try again later",
+                    });
+                else {
+                    // console.log("LN 865 SP  controller",results)
+                    res.send({
+                        error: false,
+                        message: `Vehicle Details fetched successfully`,
+                        data: results
                     });
                 }
             });

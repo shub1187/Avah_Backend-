@@ -536,8 +536,8 @@ module.exports = {
         try {
           var body = req.body
           // console.log("ln 691", body)
-          const query = 'INSERT INTO appointment (customer_id,sp_id,name,business_name,vehicle_number,vehicle_type, brand,model,fuel_type, email, mobile_number, pickup_drop,pickup_address,appointment_date,appointment_time,appointment_status,has_customer_cancelled,has_sp_cancelled,jobcard_status,cust_cancellation_note,sp_cancellation_note,is_reschedule_allowed,customization,has_sp_rejected,sp_rejection_note,estimate_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26) RETURNING *';
-          const values = [body.customer_id,body.sp_id,body.name,body.business_name,body.vehicle_number,body.vehicle_type, body.brand,body.model,body.fuel_type, body.email, body.mobile_number, body.pickup_drop,body.pickup_address,body.appointment_date,body.appointment_time,"Pending",false,false,"Pending",null,null,false,body.customization,false,null,'Pending'];
+          const query = 'INSERT INTO appointment (customer_id,sp_id,name,business_name,vehicle_number,vehicle_type, brand,model,fuel_type, email, mobile_number, pickup_drop,pickup_address,appointment_date,appointment_time,appointment_status,has_customer_cancelled,has_sp_cancelled,jobcard_status,cust_cancellation_note,sp_cancellation_note,is_reschedule_allowed,customization,has_sp_rejected,sp_rejection_note,estimate_status,complaints,kilometers_driven) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28) RETURNING *';
+          const values = [body.customer_id,body.sp_id,body.name,body.business_name,body.vehicle_number,body.vehicle_type, body.brand,body.model,body.fuel_type, body.email, body.mobile_number, body.pickup_drop,body.pickup_address,body.appointment_date,body.appointment_time,"Pending",false,false,"Pending",null,null,false,body.customization,false,null,'Pending',body.complaints,body.kilometers_driven];
           
           const data = await new Promise((resolve) => {
             client.query(query, values, (err, result) => {
@@ -560,7 +560,7 @@ module.exports = {
           var body = req.body
           console.log("ln 691", body)
           const query = 'UPDATE appointment SET appointment_status = $1, has_customer_cancelled =$2, cust_cancellation_note =$3 WHERE appointment_id = $4 AND jobcard_status = $5  RETURNING *';
-          const values = ['cancelled',true,body.cust_cancellation_note,body.appointment_id,'Pending'];
+          const values = ['Cancelled By Customer',true,body.cust_cancellation_note,body.appointment_id,'Pending'];
           
           const data = await new Promise((resolve) => {
             client.query(query, values, (err, result) => {
@@ -582,11 +582,12 @@ module.exports = {
         try {
           console.log("Entered 1573 pending Appointment")
           const { customer_id, q, _page, _limit } = req.query;
-          let queryText = 'SELECT appointment_id,customer_id,sp_id,vehicle_number,vehicle_type,brand,model,fuel_type,pickup_drop,pickup_address,appointment_time,appointment_status,jobcard_status,customization,estimate_status,appointment_date,sp_name,sp_address,sp_email,sp_contact,sp_rejection_note,cust_cancellation_note,sp_cancellation_note,estimate_number FROM appointment_details WHERE customer_id = $1 AND (appointment_status = $2 OR appointment_status = $3)';
-          const queryParams = [customer_id, 'Approved', 'Pending'];
+          // let queryText = 'SELECT appointment_id,customer_id,sp_id,vehicle_number,vehicle_type,brand,model,fuel_type,pickup_drop,pickup_address,appointment_time,appointment_status,jobcard_status,customization,estimate_status,appointment_date,sp_name,sp_address,sp_email,sp_contact,sp_rejection_note,cust_cancellation_note,sp_cancellation_note,estimate_number FROM appointment_details WHERE customer_id = $1 AND (appointment_status = $2 OR appointment_status = $3) AND estimate_status <> $4';
+          let queryText = 'SELECT * FROM appointment_details WHERE customer_id = $1 AND (appointment_status = $2 OR appointment_status = $3) AND estimate_status <> $4 ORDER BY appointment_id DESC';
+          const queryParams = [customer_id, 'Approved', 'Pending', 'Rejected By Customer'];
       
           if (q) { // This is for search functionality
-            queryText += ' AND (sp_name ILIKE $4 OR vehicle_number ILIKE $4 OR vehicle_type ILIKE $4 OR appointment_status ILIKE $4)';
+            queryText += ' AND (vehicle_number ILIKE $5)';
             queryParams.push(`%${q}%`);
           }
       
@@ -601,14 +602,6 @@ module.exports = {
                 console.log(err);
                 return callback(true, "Unable to fetch the pending and approved appointment details");
               } else {
-                // const results = {
-                //   results: result.rows,
-                //   pagination: {
-                //     currentPage: parseInt(_page) || 1,
-                //     totalPages: 1,
-                //     totalRows: result.rowCount.toString(),
-                //   },
-                // };
                 return callback(false, result.rows);
               }
             });
@@ -622,8 +615,8 @@ module.exports = {
         try {
           console.log("Entered 1573 pending Appointment")
           const { customer_id, q, _page, _limit } = req.query;
-          let queryText = 'SELECT appointment_id,customer_id,sp_id,vehicle_number,vehicle_type,brand,model,fuel_type,pickup_drop,pickup_address,appointment_time,appointment_status,jobcard_status,customization,estimate_status,appointment_date,sp_name,sp_address,sp_email,sp_contact,sp_rejection_note,cust_cancellation_note,sp_cancellation_note FROM appointment_details WHERE customer_id = $1 AND (appointment_status = $2 OR appointment_status = $3)';
-          const queryParams = [customer_id, 'Rejected By SP', 'Cancelled By Customer'];
+          let queryText = 'SELECT appointment_id,customer_id,sp_id,vehicle_number,vehicle_type,brand,model,fuel_type,pickup_drop,pickup_address,appointment_time,appointment_status,jobcard_status,customization,estimate_status,appointment_date,sp_name,sp_address,sp_email,sp_contact,sp_rejection_note,cust_cancellation_note,sp_cancellation_note FROM appointment_details WHERE customer_id = $1 AND (appointment_status = $2 OR appointment_status = $3 OR estimate_status = $4) ';
+          const queryParams = [customer_id, 'Rejected By SP', 'Cancelled By Customer', 'Rejected By Customer'];
       
           if (q) { // This is for search functionality
             queryText += ' AND (sp_name ILIKE $4 OR vehicle_number ILIKE $4 OR vehicle_type ILIKE $4 OR appointment_status ILIKE $4)';
@@ -641,14 +634,6 @@ module.exports = {
                 console.log(err);
                 return callback(true, "Unable to fetch the pending and approved appointment details");
               } else {
-                // const results = {
-                //   results: result.rows,
-                //   pagination: {
-                //     currentPage: parseInt(_page) || 1,
-                //     totalPages: 1,
-                //     totalRows: result.rowCount.toString(),
-                //   },
-                // };
                 return callback(false, result.rows);
               }
             });
@@ -710,7 +695,78 @@ const upload = multer({ storage: storage }).single('image'); // 'image' is the k
   } catch (error) {
     return callback(true, error.message);
   }
-}
+},
+
+
+
+// New Customer approval from Customer end including Job card creation
+
+estimateApprovalFromCustomer: async (req, callback) => {
+  try {
+    var body = req.body;
+    console.log("ln 712", body);
+
+    // Now, copy data from estimate table to job card table
+    const sequenceName = 'jobcard_number_seq'; // Replace with your sequence name
+    const { rows } = await client.query(`SELECT nextval('${sequenceName}')`);
+    const jobCardNumber = rows[0].nextval;
+
+    // const copyQuery = 'INSERT INTO jobcard (jobcard_number, jobcard_last_updated,type,name,hsn_sac,selling_price,tax,sp_id,appointment_id) SELECT ($1, CURRENT_DATE,type,name,hsn_sac,selling_price,tax,sp_id,appointment_id) FROM estimate WHERE estimate_number = $2';
+    const copyQuery = 'INSERT INTO jobcard (jobcard_number, jobcard_last_updated, type, name, hsn_sac, selling_price, tax, sp_id, appointment_id,quantity) SELECT $1, CURRENT_DATE, type, name, hsn_sac, selling_price, tax, sp_id, appointment_id,quantity FROM estimate WHERE estimate_number = $2';
+    const copyValues = [jobCardNumber, body.estimate_number];
+
+    client.query(copyQuery, copyValues, (err, result) => {
+      if (err) {
+        console.error('Error copying data to job card table:', err);
+        return callback(true, 'Failed to create job card');
+      }
+      console.log('Job card created successfully!');
+
+      // Update appointment table
+      const updateQuery = 'UPDATE appointment SET estimate_status = $1, has_customer_cancelled = $2, jobcard_status = $3, advisor_assigned = $4, estimate_approval_or_rejection_date = CURRENT_DATE, jobcard_number = $7, jobcard_opened_on = CURRENT_DATE  WHERE appointment_id = $5 AND estimate_number = $6 RETURNING *';
+      const updateValues = ['Approved By Customer', false, 'Created', 'No', body.appointment_id, body.estimate_number, jobCardNumber];
+
+      client.query(updateQuery, updateValues, (err, result) => {
+        if (err) {
+          console.error('Error in estimate approval from customer portal:', err);
+          return callback(true, 'Failed to approve estimate');
+        }
+        console.log('Estimate approved successfully!');
+        callback(false, 'Estimate approved successfully, and job card created');
+      });
+    });
+  } catch (error) {
+    console.error('Error in estimate approval from customer portal:', error);
+    callback(true, error.message);
+  }
+},
+
+
+
+estimateRejectedByCustomer:async (req, callback) => { 
+  try {
+    var body = req.body
+    console.log("ln 712", body)
+    const query = 'UPDATE appointment SET estimate_status = $1,has_customer_cancelled =$2, jobcard_status = $3, advisor_assigned = $4, estimate_rejection_note = $5,estimate_approval_Or_rejection_date = CURRENT_DATE WHERE appointment_id = $6 AND estimate_number = $7 RETURNING *';
+    const values = ['Rejected By Customer',true,'Cancelled','No',body.estimate_rejection_note,body.appointment_id,body.estimate_number];
+    
+    const data = await new Promise((resolve) => {
+      client.query(query, values, (err, result) => {
+        if (err) {
+          console.error('Error in estimate  rejection from customer portal:', err);
+          return callback(true, 'Failed to reject estimate');
+        }
+        console.log('Estimate rejected successfully!');
+        return callback(false, 'Estimate rejected successfully');
+      });
+    });
+  } catch (error) {
+    console.error('Error in estimate  rejection from customer portal:', error);
+    return callback(true, error.message);
+  }
+},
+
+
 
 
 }

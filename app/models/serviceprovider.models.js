@@ -14,15 +14,26 @@ client.connect ();
 const addEstimateEntry = async (data, type, estimateNumber,sp_id,appointment_id) => {
   try {
     console.log(" ln 16 sp_id", sp_id, data)
-      const { name, hsn_sac, selling_price, tax } = data;
-      // if(labour_name){
-      //   var name = labour_name
-      // }
-      // if(spare_name){
-      //   var name = spare_name
-      // }
-      const query = 'INSERT INTO estimate (estimate_number, type, name, hsn_sac, selling_price, tax, sp_id,appointment_id) VALUES ($1, $2, $3, $4, $5, $6,$7,$8) RETURNING *';
-      const values = [estimateNumber, type, name, hsn_sac, selling_price, tax,sp_id,appointment_id];
+      const { name, hsn_sac, selling_price, tax, quantity } = data;
+      const query = 'INSERT INTO estimate (estimate_number, type, name, hsn_sac, selling_price, tax, sp_id,appointment_id,quantity) VALUES ($1, $2, $3, $4, $5, $6,$7,$8,$9) RETURNING *';
+      const values = [estimateNumber, type, name, hsn_sac, selling_price, tax,sp_id,appointment_id,quantity];
+
+      const result = await client.query(query, values);
+
+      console.log(`${type} entry added to the system successfully!`, result.rows);
+      return result.rows; // Resolve with the inserted data
+  } catch (error) {
+      console.error(`Error in adding ${type} entry:`, error);
+      throw error; // Reject the promise with the error
+  }
+};
+
+const addJobcardEntry = async (data, type, jobcardNumber,sp_id,appointment_id) => {
+  try {
+    console.log(" ln 16 sp_id", sp_id, data)
+      const { name, hsn_sac, selling_price, tax, quantity } = data;
+      const query = 'INSERT INTO jobcard (jobcard_number, type, name, hsn_sac, selling_price, tax, sp_id,appointment_id,quantity,jobcard_last_updated) VALUES ($1, $2, $3, $4, $5, $6,$7,$8,$9,CURRENT_DATE) RETURNING *';
+      const values = [jobcardNumber, type, name, hsn_sac, selling_price, tax,sp_id,appointment_id,quantity];
 
       const result = await client.query(query, values);
 
@@ -64,10 +75,6 @@ module.exports = {
 
   login: async (req, callback) => {
     try {
-      // OLD Login Query 
-      // const login_query = {text: 'SELECT * FROM approved_service_providers WHERE email = $1 AND password = $2 AND role = $3',
-      // values: [req.body.email, req.body.password, req.body.role]}
-      //  New Login Query
       const login_query = {text: 'SELECT * FROM service_provider_login_creds WHERE email = $1 AND password = $2',
       values: [req.body.email, req.body.password]}
       console.log( login_query)
@@ -75,7 +82,7 @@ module.exports = {
           client.query(
             login_query, 
             (err,result)=>{
-              console.log("result",result)
+              // console.log("result",result)
             if (result.rows.length==1 && result.rows[0].status == 'active' ) {  // Login successfull for active service provider
               return callback(false, result);
             } 
@@ -94,255 +101,14 @@ module.exports = {
     }
   },
 
- 
-
-  createUser: async (req, callback) => {
-    try {
-      var body = req.body;
-      const data = await new Promise((resolve) => {
-        sql.query(
-          "INSERT into users (first_name,last_name,email,mobile,password,vehicle_no) VALUES (?,?,?,?,?,?)",
-          [
-            body.first_name,
-            body.last_name,
-            body.email,
-            body.mobile,
-            body.password,
-            body.vehicle_no
-          ],
-          (err, sqlResult) => {
-            resolve(sqlResult);
-          }
-        );
-      });
-      if (data) {
-        return callback(false, data);
-      } else {
-        return callback(true, "Please choose other mobile number");
-      }
-    } catch {
-      console.log("catch block");
-      callback(true, "error");
-      return true;
-    }
-  },
-
-  getUserById: async (req, callback) => {
-    try {
-      const data = await new Promise((resolve) => {
-        sql.query(
-          "SELECT * FROM users where id=?",
-          [req.body.user_id],
-          (err, sqlResult) => {
-            resolve(sqlResult);
-          }
-        );
-      });
-      if (data && data.length > 0) {
-        return callback(false, data[0]);
-      } else {
-        return callback(true, "No data found");
-      }
-    } catch (e) {
-      callback(true, e);
-    }
-  },
-
-  updateUserPassword: async (req, callback) => {
-    try {
-      var body = req.body;
-      const data = await new Promise((resolve) => {
-        sql.query(
-          "UPDATE users SET password=? WHERE id=?",
-          [body.password, body.id],
-          (err, sqlResult) => {
-            resolve(sqlResult);
-          }
-        );
-      });
-      if (data) {
-        return callback(false, data);
-      } else {
-        return callback(true, "Please choose other mobile number");
-      }
-    } catch {
-      console.log("catch block");
-      callback(true, "error");
-      return true;
-    }
-  },
-
-  updateUserDetail: async (req, callback) => {
-    try {
-      var body = req.body;
-      const data = await new Promise((resolve) => {
-        sql.query(
-          "UPDATE users SET first_name=?,last_name=?,email=?,mobile=?,vehicle_no=? WHERE id=?",
-          [
-            body.first_name,
-            body.last_name,
-            body.email,
-            body.mobile,
-            body.vehicle_no,
-            body.user_id,
-          ],
-          (err, sqlResult) => {
-            // if (err) {
-            //   resolve(err);
-            // } else {
-            resolve(sqlResult);
-            // }
-          }
-        );
-      });
-      if (data) {
-        return callback(false, data);
-      } else {
-        return callback(true, "Oops something went wrong");
-      }
-    } catch {
-      console.log("catch block");
-      callback(true, "error");
-      return true;
-    }
-  },
-
-  deleteUser: async (req, callback) => {
-    try {
-      var body = req.body;
-      const data = await new Promise((resolve) => {
-        sql.query(
-          "UPDATE users SET is_deleted=? WHERE id=?",
-          [1, body.user_id],
-          (err, sqlResult) => {
-            resolve(sqlResult);
-          }
-        );
-      });
-      if (data) {
-        return callback(false, data);
-      } else {
-        return callback(true, "Please choose other mobile number");
-      }
-    } catch {
-      console.log("catch block");
-      callback(true, "error");
-      return true;
-    }
-  },
-
-  getUserSearch: async (req, callback) => {
-    try {
-      var numRows;
-      var queryPagination;
-      var numPerPage = parseInt(req.query.numberPerPage, 10) || 1;
-      var page = parseInt(req.query.page, 10) || 0;
-      var numPages;
-      var skip = page * numPerPage;
-      // Here we compute the LIMIT parameter for MySQL query
-      var limit = skip + "," + numPerPage;
-      const data = await new Promise((resolve) => {
-        sql.query(
-          "SELECT count(*) as numRows FROM users WHERE is_deleted=0 AND first_name LIKE '%" +
-          req.query.searchText +
-          "%' OR last_name LIKE '%" +
-          req.query.searchText +
-          "%' OR mobile LIKE '%" +
-          req.query.searchText +
-          "%' OR email LIKE '%" +
-          req.query.searchText +
-          "%'",
-          (err, sqlResult) => {
-            console.log(err);
-            resolve(sqlResult);
-          }
-        );
-      });
-      console.log(data);
-      if (data) {
-        numRows = data[0].numRows;
-        numPages = Math.ceil(numRows / numPerPage);
-        console.log("number of pages:", numPages);
-        const data2 = await new Promise((resolve) => {
-          sql.query(
-            "SELECT * FROM users WHERE is_deleted=0 AND first_name LIKE '%" +
-            req.query.searchText +
-            "%' OR last_name LIKE '%" +
-            req.query.searchText +
-            "%' OR mobile LIKE '%" +
-            req.query.searchText +
-            "%' OR email LIKE '%" +
-            req.query.searchText +
-            "%' ORDER BY ID DESC LIMIT " +
-            limit,
-            (err, sqlResult) => {
-              resolve(sqlResult);
-            }
-          );
-        });
-        if (data2) {
-          var responsePayload = {
-            results: data2,
-          };
-          if (page < numPages) {
-            responsePayload.pagination = {
-              current: page,
-              perPage: numPerPage,
-              totalPage: numPages,
-              previous: page > 0 ? page - 1 : undefined,
-              next: page < numPages - 1 ? page + 1 : undefined,
-            };
-          } else
-            responsePayload.pagination = {
-              err: "queried page " +
-                page +
-                " is >= to maximum page number " +
-                numPages,
-            };
-          return callback(false, responsePayload);
-        } else {
-          return callback(true, "No data found");
-        }
-      } else {
-        return callback(true, "No data found");
-      }
-    } catch (e) {
-      console.log(e);
-      callback(true, e);
-    }
-  },
-
-  updateUserActive: async (req, callback) => {
-    try {
-      var body = req.body;
-      const data = await new Promise((resolve) => {
-        sql.query(
-          "UPDATE users SET is_active=? WHERE id=?",
-          [body.is_active, body.user_id],
-          (err, sqlResult) => {
-            resolve(sqlResult);
-          }
-        );
-      });
-      if (data) {
-        return callback(false, data);
-      } else {
-        return callback(true, "Please choose other mobile number");
-      }
-    } catch {
-      console.log("catch block");
-      callback(true, "error");
-      return true;
-    }
-  },
-  // To get list of technician for creating Job Card
+  // To get list of technician for creating Job Card OLD
   getAllTechnicianEmployee: async (req, callback) => {
    try {
     console.log("getAlltech:", req.query)
     const { sp_id } = req.query;
     const getall_technician = {
       text: 'SELECT * FROM employee WHERE role = $1 AND sp_id = $2',
-      values: ['technician', sp_id],
+      values: ['Technician', sp_id],
     };
     const data = await new Promise((resolve) => {
       client.query(
@@ -357,16 +123,12 @@ module.exports = {
            result.rows.map((x) => {
               technican_names.push(x.name);
             });
-            console.log(technican_names);
-            const results = {
-              results: technican_names ,
-              pagination: {
-                currentPage: 1,
-                totalPages: 1,
-                totalRows: "9",
-              },
-            };
-            return callback(false, results);
+
+            const resultArray = technican_names.map(technician_name => ({
+              label:technician_name,
+              value:technician_name
+            }));
+            return callback(false, resultArray);
           }
         }
       );
@@ -384,7 +146,7 @@ getAllEmployee: async (req, callback) => {
     const queryParams = [sp_id];
 
     if (q) { // This is for search functionality
-      queryText += ' AND (name ILIKE $2 OR email ILIKE $2 OR role ILIKE $2 OR status ILIKE $2 OR mobile ILIKE $2  )';
+      queryText += ' AND (name ILIKE $2 OR email ILIKE $2 OR role ILIKE $2 OR status ILIKE $2 OR mobile ILIKE $2)';
       queryParams.push(`%${q}%`);
     }
 
@@ -401,11 +163,6 @@ getAllEmployee: async (req, callback) => {
         } else {
           const results = {
             results: result.rows
-            // pagination: {
-            //   currentPage: parseInt(_page) || 1,
-            //   totalPages: 1,
-            //   totalRows: result.rowCount.toString(),
-            // },
           };
           return callback(false, results);
         }
@@ -507,10 +264,6 @@ getAllAppointment: async (req, callback) => {
 },
 
 // get All Model as per brands to create appointment.
-
-
-
-
   createEmployee:async (req, callback) => {
     try {
       var body = req.body
@@ -532,6 +285,8 @@ getAllAppointment: async (req, callback) => {
       return callback(true, error.message);
     }
   },
+
+  // I think we need to change this create Appointment as per new dialog
 
   createAppointment:async (req, callback) => {
     try {
@@ -555,492 +310,7 @@ getAllAppointment: async (req, callback) => {
     }
   },
 
-  updateEmployeePassword: async (req, callback) => {
-    try {
-      var body = req.body;
-      const data = await new Promise((resolve) => {
-        sql.query(
-          "UPDATE employees SET password=? WHERE id=?",
-          [body.password, body.id],
-          (err, sqlResult) => {
-            resolve(sqlResult);
-          }
-        );
-      });
-      if (data) {
-        return callback(false, data);
-      } else {
-        return callback(true, "Please choose other mobile number");
-      }
-    } catch {
-      console.log("catch block");
-      callback(true, "error");
-      return true;
-    }
-  },
-
-  getEmployeeById: async (req, callback) => {
-    try {
-      const data = await new Promise((resolve) => {
-        sql.query(
-          "SELECT * FROM employees where id=?",
-          [req.body.user_id],
-          (err, sqlResult) => {
-            resolve(sqlResult);
-          }
-        );
-      });
-      if (data && data.length > 0) {
-        return callback(false, data[0]);
-      } else {
-        return callback(true, "No data found");
-      }
-    } catch (e) {
-      callback(true, e);
-    }
-  },
-
-  updateEmployeeDetail: async (req, callback) => {
-    try {
-      var body = req.body;
-      const data = await new Promise((resolve) => {
-        sql.query(
-          "UPDATE employees SET first_name=?,last_name=?,email=?,mobile=? WHERE id=?",
-          [
-            body.first_name,
-            body.last_name,
-            body.email,
-            body.mobile,
-            body.user_id,
-          ],
-          (err, sqlResult) => {
-            resolve(sqlResult);
-          }
-        );
-      });
-      if (data) {
-        return callback(false, data);
-      } else {
-        return callback(true, "Please choose other mobile number");
-      }
-    } catch {
-      console.log("catch block");
-      callback(true, "error");
-      return true;
-    }
-  },
-
-  deleteEmployee: async (req, callback) => {
-    try {
-      var body = req.body;
-      const data = await new Promise((resolve) => {
-        sql.query(
-          "UPDATE employees SET is_deleted=? WHERE id=?",
-          [1, body.user_id],
-          (err, sqlResult) => {
-            resolve(sqlResult);
-          }
-        );
-      });
-      if (data) {
-        return callback(false, data);
-      } else {
-        return callback(true, "Please choose other mobile number");
-      }
-    } catch {
-      console.log("catch block");
-      callback(true, "error");
-      return true;
-    }
-  },
-
-  getEmployeeSearch: async (req, callback) => {
-    try {
-      var numRows;
-      var queryPagination;
-      var numPerPage = parseInt(req.query.numberPerPage, 10) || 1;
-      var page = parseInt(req.query.page, 10) || 0;
-      var numPages;
-      var skip = page * numPerPage;
-      // Here we compute the LIMIT parameter for MySQL query
-      var limit = skip + "," + numPerPage;
-      const data = await new Promise((resolve) => {
-        sql.query(
-          "SELECT count(*) as numRows FROM employees WHERE is_deleted=0 AND first_name LIKE '%" +
-          req.query.searchText +
-          "%' OR last_name LIKE '%" +
-          req.query.searchText +
-          "%' OR mobile LIKE '%" +
-          req.query.searchText +
-          "%' OR email LIKE '%" +
-          req.query.searchText +
-          "%'",
-          (err, sqlResult) => {
-            console.log(err);
-            resolve(sqlResult);
-          }
-        );
-      });
-      console.log(data);
-      if (data) {
-        numRows = data[0].numRows;
-        numPages = Math.ceil(numRows / numPerPage);
-        console.log("number of pages:", numPages);
-        const data2 = await new Promise((resolve) => {
-          sql.query(
-            "SELECT * FROM employees WHERE is_deleted=0 AND first_name LIKE '%" +
-            req.query.searchText +
-            "%' OR last_name LIKE '%" +
-            req.query.searchText +
-            "%' OR mobile LIKE '%" +
-            req.query.searchText +
-            "%' OR email LIKE '%" +
-            req.query.searchText +
-            "%' ORDER BY ID DESC LIMIT " +
-            limit,
-            (err, sqlResult) => {
-              resolve(sqlResult);
-            }
-          );
-        });
-        if (data2) {
-          var responsePayload = {
-            results: data2,
-          };
-          if (page < numPages) {
-            responsePayload.pagination = {
-              current: page,
-              perPage: numPerPage,
-              totalPage: numPages,
-              previous: page > 0 ? page - 1 : undefined,
-              next: page < numPages - 1 ? page + 1 : undefined,
-            };
-          } else
-            responsePayload.pagination = {
-              err: "queried page " +
-                page +
-                " is >= to maximum page number " +
-                numPages,
-            };
-          return callback(false, responsePayload);
-        } else {
-          return callback(true, "No data found");
-        }
-      } else {
-        return callback(true, "No data found");
-      }
-    } catch (e) {
-      console.log(e);
-      callback(true, e);
-    }
-  },
-
-  updateEmployeeActive: async (req, callback) => {
-    try {
-      var body = req.body;
-      const data = await new Promise((resolve) => {
-        sql.query(
-          "UPDATE employees SET is_active=? WHERE id=?",
-          [body.is_active, body.user_id],
-          (err, sqlResult) => {
-            resolve(sqlResult);
-          }
-        );
-      });
-      if (data) {
-        return callback(false, data);
-      } else {
-        return callback(true, "Please choose other mobile number");
-      }
-    } catch {
-      console.log("catch block");
-      callback(true, "error");
-      return true;
-    }
-  },
-
- 
-
-  createSpare: async (req, callback) => {
-    try {
-      var body = req.body;
-      const data = await new Promise((resolve) => {
-        sql.query(
-          "INSERT into spares (name,hsn_sac,part_number,fuel_type_id,threshold,purchase_price,selling_price,tax_price,units,expiry_date) VALUES (?,?,?,?,?,?,?,?,?,?)",
-          [
-            body.name,
-            body.hsn_sac,
-            body.part_number,
-            body.fuel_type_id,
-            body.threshold,
-            body.purchase_price,
-            body.selling_price,
-            body.tax_price,
-            body.units,
-            body.expiry_date,
-          ],
-          (err, sqlResult) => {
-            resolve(sqlResult);
-          }
-        );
-      });
-      if (data) {
-        return callback(false, data);
-      } else {
-        return callback(true, "Please choose other mobile number");
-      }
-    } catch {
-      console.log("catch block");
-      callback(true, "error");
-      return true;
-    }
-  },
-
-  getSpareById: async (req, callback) => {
-    try {
-      const data = await new Promise((resolve) => {
-        sql.query(
-          "SELECT spares.*,fuels.fuel_name FROM spares INNER JOIN fuels ON spares.id=fuels.id where spares.id=?",
-          [req.body.id],
-          (err, sqlResult) => {
-            resolve(sqlResult);
-          }
-        );
-      });
-      if (data && data.length > 0) {
-        return callback(false, data[0]);
-      } else {
-        return callback(true, "No data found");
-      }
-    } catch (e) {
-      callback(true, e);
-    }
-  },
-
-  updateSpareDetail: async (req, callback) => {
-    try {
-      var body = req.body;
-      const data = await new Promise((resolve) => {
-        sql.query(
-          "UPDATE spares SET name=?,hsn_sac=?,part_number=?,fuel_type_id=?,threshold=?,purchase_price=?,selling_price=?,tax_price=?,units=?,expiry_date=? WHERE id=?",
-          [
-            body.name,
-            body.hsn_sac,
-            body.part_number,
-            body.fuel_type_id,
-            body.threshold,
-            body.purchase_price,
-            body.selling_price,
-            body.tax_price,
-            body.units,
-            body.expiry_date,
-            body.id
-          ],
-          (err, sqlResult) => {
-            resolve(sqlResult);
-          }
-        );
-      });
-      if (data) {
-        return callback(false, data);
-      } else {
-        return callback(true, "Please choose other mobile number");
-      }
-    } catch {
-      console.log("catch block");
-      callback(true, "error");
-      return true;
-    }
-  },
-  getSpareSearch: async (req, callback) => {
-    try {
-      var numRows;
-      var queryPagination;
-      var numPerPage = parseInt(req.query.numberPerPage, 10) || 1;
-      var page = parseInt(req.query.page, 10) || 0;
-      var numPages;
-      var skip = page * numPerPage;
-      // Here we compute the LIMIT parameter for MySQL query
-      var limit = skip + "," + numPerPage;
-      const data = await new Promise((resolve) => {
-        sql.query(
-          "SELECT count(*) as numRows FROM spares WHERE is_deleted=0 AND name LIKE '%" +
-          req.query.searchText +
-          "%' OR part_number LIKE '%" +
-          req.query.searchText +
-          "%' OR hsn_sac LIKE '%" +
-          req.query.searchText +
-          "%' OR selling_price LIKE '%" +
-          req.query.searchText +
-          "%'",
-          (err, sqlResult) => {
-            console.log(err);
-            resolve(sqlResult);
-          }
-        );
-      });
-      console.log(data);
-      if (data) {
-        numRows = data[0].numRows;
-        numPages = Math.ceil(numRows / numPerPage);
-        console.log("number of pages:", numPages);
-        const data2 = await new Promise((resolve) => {
-          sql.query(
-            "SELECT spares.*,fuels.fuel_name FROM spares INNER JOIN fuels ON spares.id=fuels.id WHERE spares.is_deleted=0 AND spares.name LIKE '%" +
-            req.query.searchText +
-            "%' OR spares.part_number LIKE '%" +
-            req.query.searchText +
-            "%' OR spares.hsn_sac LIKE '%" +
-            req.query.searchText +
-            "%' OR spares.selling_price LIKE '%" +
-            req.query.searchText +
-            "%' ORDER BY spares.ID DESC LIMIT " +
-            limit,
-            (err, sqlResult) => {
-              resolve(sqlResult);
-            }
-          );
-        });
-        if (data2) {
-          var responsePayload = {
-            results: data2,
-          };
-          if (page < numPages) {
-            responsePayload.pagination = {
-              current: page,
-              perPage: numPerPage,
-              totalPage: numPages,
-              previous: page > 0 ? page - 1 : undefined,
-              next: page < numPages - 1 ? page + 1 : undefined,
-            };
-          } else
-            responsePayload.pagination = {
-              err: "queried page " +
-                page +
-                " is >= to maximum page number " +
-                numPages,
-            };
-          return callback(false, responsePayload);
-        } else {
-          return callback(true, "No data found");
-        }
-      } else {
-        return callback(true, "No data found");
-      }
-    } catch (e) {
-      console.log(e);
-      callback(true, e);
-    }
-  },
-
-  updateSpareActive: async (req, callback) => {
-    try {
-      var body = req.body;
-      const data = await new Promise((resolve) => {
-        sql.query(
-          "UPDATE spares SET is_active=? WHERE id=?",
-          [body.is_active, body.id],
-          (err, sqlResult) => {
-            resolve(sqlResult);
-          }
-        );
-      });
-      if (data) {
-        return callback(false, data);
-      } else {
-        return callback(true, "Please choose other mobile number");
-      }
-    } catch {
-      console.log("catch block");
-      callback(true, "error");
-      return true;
-    }
-  },
-
- 
-
-  
-
-
-
-
-
-  
-
-
- 
-
-  
-
-  
-
-  getAllEstimate: async (req, callback) => {
-    try {
-      console.log(req.page);
-      var numRows;
-      var queryPagination;
-      var numPerPage = parseInt(req.query.numberPerPage, 10) || 20000;
-      var page = parseInt(req.query.page, 10) || 0;
-      var numPages;
-      var skip = page * numPerPage;
-      // Here we compute the LIMIT parameter for MySQL query
-      var limit = skip + "," + numPerPage;
-      const data = await new Promise((resolve) => {
-        sql.query(
-          "SELECT count(*) as numRows FROM estimate",
-          (err, sqlResult) => {
-            resolve(sqlResult);
-          }
-        );
-      });
-      console.log(data);
-      if (data) {
-        numRows = data[0].numRows;
-        numPages = Math.ceil(numRows / numPerPage);
-        console.log("number of pages:", numPages);
-        const data2 = await new Promise((resolve) => {
-          sql.query(
-            "SELECT users.*,estimate.* FROM estimate INNER JOIN users ON estimate.user_id=users.id ORDER BY estimate.ID DESC LIMIT " +
-            limit,
-            (err, sqlResult) => {
-              resolve(sqlResult);
-            }
-          );
-        });
-        if (data2) {
-          var responsePayload = {
-            results: data2,
-          };
-          if (page < numPages) {
-            responsePayload.pagination = {
-              current: page,
-              perPage: numPerPage,
-              totalPage: numPages,
-              previous: page > 0 ? page - 1 : undefined,
-              next: page < numPages - 1 ? page + 1 : undefined,
-            };
-          } else
-            responsePayload.pagination = {
-              err: "queried page " +
-                page +
-                " is >= to maximum page number " +
-                numPages,
-            };
-          return callback(false, responsePayload);
-        } else {
-          return callback(true, "No data found");
-        }
-      } else {
-        return callback(true, "No data found");
-      }
-    } catch (e) {
-      callback(true, e);
-    }
-  },
-
   // Service Provider Authority to approve/reject 
-
-  
   spApprovalOfCustAppointment: async (req, callback) => {
     try {
       const body = req.body;
@@ -1083,12 +353,13 @@ getAllAppointment: async (req, callback) => {
     }
   },
 
+  // Get All Pending Appointments
   getAllPendingAppointment: async (req, callback) => {
     try {
       console.log("Entered 1573 pending Appointment")
       const { sp_id, q, _page, _limit } = req.query;
-      let queryText = 'SELECT appointment_id,name,vehicle_number,vehicle_type,brand,model,customization,fuel_type,email,mobile_number,pickup_drop,appointment_date,appointment_time,appointment_status,estimate_status,pickup_address FROM appointment WHERE sp_id = $1 AND (appointment_status = $2 OR appointment_status = $3) AND estimate_status <> $4';
-      const queryParams = [sp_id, 'Approved', 'Pending', 'Created'];
+      let queryText = 'SELECT appointment_id,name,vehicle_number,vehicle_type,brand,model,customization,fuel_type,email,mobile_number,pickup_drop,appointment_date,appointment_time,appointment_status,estimate_status,pickup_address FROM appointment WHERE sp_id = $1 AND (appointment_status = $2 OR appointment_status = $3) AND estimate_status <> $4  AND has_customer_cancelled <> $5 AND jobcard_status <> $6 ORDER BY appointment_id DESC';
+      const queryParams = [sp_id, 'Approved', 'Pending', 'Created', true,'Created'];
   
       if (q) { // This is for search functionality
         queryText += ' AND (name ILIKE $4 OR vehicle_number ILIKE $4 OR vehicle_type ILIKE $4 OR appointment_status ILIKE $4)';
@@ -1118,11 +389,12 @@ getAllAppointment: async (req, callback) => {
     }
   },
 
+  //Rejectyed or Cancelled appointments
   getAllRejectedAndCancelledAppointment: async (req, callback) => {
     try {
       const { sp_id, q, _page, _limit } = req.query;
-      let queryText = 'SELECT appointment_id,name,vehicle_number,vehicle_type,brand,model,customization,fuel_type,email,mobile_number,pickup_drop,pickup_address,appointment_date,appointment_time,appointment_status,sp_rejection_note,cust_cancellation_note,sp_cancellation_note FROM appointment WHERE sp_id = $1 AND (appointment_status = $2 OR appointment_status = $3 OR appointment_status = $4)';
-      const queryParams = [sp_id, 'Rejected By SP', 'Cancelled by Customer', 'cancelled by estimate']; 
+      let queryText = 'SELECT appointment_id,name,vehicle_number,vehicle_type,brand,model,customization,fuel_type,email,mobile_number,pickup_drop,pickup_address,appointment_date,appointment_time,appointment_status,sp_rejection_note,cust_cancellation_note,sp_cancellation_note FROM appointment WHERE sp_id = $1 AND (appointment_status = $2 OR appointment_status = $3 OR appointment_status = $4) OR has_customer_cancelled = $5';
+      const queryParams = [sp_id, 'Rejected By SP', 'Cancelled by Customer', 'cancelled by estimate', true]; 
   
       // if (q) { // This is for search functionality
       //   queryText += ' AND (name ILIKE $2 OR email ILIKE $2 OR role ILIKE $2 OR status ILIKE $2 OR mobile ILIKE $2  )';
@@ -1220,8 +492,7 @@ getAllAppointment: async (req, callback) => {
   },
 
 
-
-  getAllSpares: async (req, callback) => {
+   getAllSpares : async (req, callback) => {
     try {
       const { sp_id, q, _page, _limit } = req.query;
       console.log("ln 1289 q", q, _page, _limit);
@@ -1235,19 +506,21 @@ getAllAppointment: async (req, callback) => {
   
       if (q) { // This is for search functionality
         console.log("inside q ln 1291", q);
-        queryText += ` AND (spare_name ILIKE $${queryParams.length + 1}
+        queryText += `
+          AND (spare_name ILIKE $${queryParams.length + 1}
           OR hsn_sac ILIKE $${queryParams.length + 2}
-          OR fuel_type ILIKE $${queryParams.length + 3})`; // Added closing parenthesis
+          OR fuel_type ILIKE $${queryParams.length + 3})
+        `;
         for (let i = 0; i < 3; i++) {
           queryParams.push(`%${q}%`);
         }
-        console.log("Query Text", queryText,queryParams.length ,queryParams);
       }
   
       // This is for pagination
       console.log("ln 1351",_limit, offset)
-     
-      queryText += ' LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
+  
+      // Always include ORDER BY clause
+      queryText += ' ORDER BY spare_id DESC LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
       queryParams.push(_limit, offset);
       console.log("ln 1298", queryText, queryParams);
   
@@ -1274,7 +547,6 @@ getAllAppointment: async (req, callback) => {
     }
   },
   
-
   getAllLabour: async (req, callback) => {
     try {
       const { sp_id, q, _page, _limit } = req.query;
@@ -1292,7 +564,7 @@ getAllAppointment: async (req, callback) => {
       }
       console.log("ln 1395", queryParams, queryText)
       // This is for pagination
-      queryText += ' LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
+      queryText += '  ORDER BY labour_id DESC LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
       console.log("ln 1399", queryParams, queryText)
       queryParams.push(_limit, offset);
       console.log("ln 1401", queryParams, queryText)
@@ -1376,16 +648,16 @@ getAllAppointment: async (req, callback) => {
       return callback(true, error.message);
     }
   },
+
+
    addEstimate : async (req, callback) => {
     try {
-     
-
-          // Generate or retrieve the estimate number for this specific moment
+        // Generate or retrieve the estimate number for this specific moment
           const sequenceName = 'estimate_number_seq'; // Replace with your sequence name
           const { rows } = await client.query(`SELECT nextval('${sequenceName}')`);
           const estimateNumber = rows[0].nextval;
         console.log("ln 1491", req.body)
-        const { sp_id,sparePayload, labourPayload,appointment_id } = req.body;
+        const { sp_id,sparePayload, labourPayload,appointment_id,estimate_created_by } = req.body;
 
         // Insert spare parts
         const sparePromises = sparePayload.map(async (spare) => {
@@ -1405,8 +677,8 @@ getAllAppointment: async (req, callback) => {
             Promise.all(labourPromises)
         ]);
 
-        const query = `UPDATE appointment SET estimate_status = $1, estimate_number = $4  WHERE appointment_id = $2 AND sp_id = $3 RETURNING *`; 
-        const values = ['Created',appointment_id, sp_id,estimateNumber];  
+        const query = `UPDATE appointment SET estimate_status = $1, estimate_number = $4,estimate_created_by = $5, estimate_created_on = CURRENT_DATE   WHERE appointment_id = $2 AND sp_id = $3 RETURNING *`; 
+        const values = ['Created',appointment_id, sp_id,estimateNumber,estimate_created_by];  
         client.query(query, values)
   
         console.log('Estimate data inserted successfully!');
@@ -1696,7 +968,7 @@ getAllCreatedEstimateList: async (req, callback) => {
   try {
     const {sp_id,q} = req.query;
     console.log("ln 1791", sp_id)
-    let queryText = 'SELECT * FROM appointment  WHERE sp_id = $1 AND estimate_status = $2'; 
+    let queryText = 'SELECT * FROM appointment  WHERE sp_id = $1 AND (estimate_status = $2) ORDER BY appointment_id DESC'; 
     const queryParams = [sp_id,'Created'];
   
     if (q) { // This is for search functionality
@@ -1772,7 +1044,7 @@ getAllEmployeeRoles: async (req, callback) => {
     }
     console.log("ln 1395", queryParams, queryText)
     // This is for pagination
-    queryText += ' LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
+    queryText += ' ORDER BY role_id DESC LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
     console.log("ln 1399", queryParams, queryText)
     queryParams.push(_limit, offset);
     console.log("ln 1401", queryParams, queryText)
@@ -1802,8 +1074,8 @@ getAllEmployeeRoles: async (req, callback) => {
 getAllPermissionPerRoles: async (req, callback) => {
   try {
     const { sp_id } = req.query;
-    let queryText = 'SELECT role_name, permission_granted FROM employee_roles WHERE sp_id = $1';
-    const queryParams = [sp_id];
+    let queryText = 'SELECT role_name, permission_granted FROM employee_roles WHERE sp_id = $1 AND is_deleted = $2';
+    const queryParams = [sp_id,false];
 
     const getAllPermissionQuery = {
       text: queryText,
@@ -1950,6 +1222,446 @@ editEmployeeRole: async (req, callback) => { // As per new inputs
   }
 },
 
+getAllCreatedJobcardList: async (req, callback) => {
+  try {
+    const {sp_id,q} = req.query;
+    console.log("ln 1791", sp_id)
+    let queryText = 'SELECT * FROM appointment  WHERE sp_id = $1 AND jobcard_status = $2 AND (payment_status <> $3 OR payment_status IS NULL) ORDER BY appointment_id DESC'; 
+    const queryParams = [sp_id,'Created','Received'];
+  
+    if (q) { // This is for search functionality
+      console.log("inside q ln 1739", q); 
+      queryText += ` AND vehicle_number ILIKE $3`; // Added closing parenthesis  
+      queryParams.push(`%${q}%`)
+      console.log("Query Text ln 1742", queryText,queryParams.length ,queryParams);
+    }
+
+    // queryText += ' LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
+    //   queryParams.push(_limit, offset);
+     
+
+    const get_jobcard_list = {
+      text: queryText,
+      values: queryParams,
+    };
+
+    const data = await new Promise((resolve) => {
+      client.query(get_jobcard_list, (err, result) => {
+        if (err) {
+          console.log(err);
+          return callback(true, "Unable to fetch the jobcard details");
+        } else {
+          const results = {
+            results: result.rows
+          };
+          return callback(false, results);
+        }
+      });
+    });
+  } catch (e) {
+    return callback(true, e.message);
+  }
+},
+
+getJobcardDetails : async (req, callback) => {
+  try {
+    console.log(req.query)
+    // return false
+      const { sp_id, jobcard_number } = req.query;
+      const labourValues = [jobcard_number,sp_id];
+      console.log("ln 1463", sp_id,jobcard_number)
+      // Fetch spare details for the specific jobcard_number
+      const spareQuery = `
+      SELECT * FROM jobcard
+      WHERE jobcard_number = $1 AND type = 'spare' AND sp_id = $2
+  `;
+  const spareValues = [jobcard_number, sp_id];
+  const spareResult = await client.query(spareQuery, spareValues);
+
+      // Fetch labour details for the specific jobcard_number
+      const labourQuery = `
+      SELECT * FROM jobcard
+      WHERE jobcard_number = $1 AND type = 'labour' AND sp_id = $2 
+      `;
+      const labourResult = await client.query(labourQuery, labourValues);
+    console.log("ln 1477", spareResult)
+      // Prepare and structure the retrieved data
+      const data = {
+          spares: spareResult.rows,
+          labours: labourResult.rows,
+       
+      };
+
+      console.log('Job Card details retrieved successfully!', data);
+      callback(false, data);
+  } catch (error) {
+      console.error('Error in fetching jobcard details: ', error);
+      callback(true, error.message);
+  }
+},
+
+updateJobcard : async (req, callback) => {
+  try {
+      const { jobcard_number,sp_id,sparePayload, labourPayload,appointment_id,jobcard_created_by,advisor_name,technician_name } = req.body;
+
+      // Delete previous 
+      console.log("Entered updateJobCard ln 2059", jobcard_number, sp_id)
+      const deleteOldJobcardQuery = `
+      DELETE FROM jobcard
+      WHERE jobcard_number = $1 AND sp_id = $2 `;
+      const deleteOldJobcardValues = [jobcard_number,sp_id];
+      const deleteOldEstimate = await client.query(deleteOldJobcardQuery, deleteOldJobcardValues);
+
+      // Insert spare parts
+      const sparePromises = sparePayload.map(async (spare) => {
+          return addJobcardEntry({ ...spare, type: 'spare' }, 'spare', jobcard_number,sp_id,appointment_id);
+      });
+
+      // Insert labor entries
+      const labourPromises = labourPayload.map(async (labour) => {
+          return addJobcardEntry({ ...labour, type: 'labour' }, 'labour', jobcard_number,sp_id,appointment_id);
+      });
+
+      // Update Estimate Status in Appointment table
+
+
+      const [spareResults, labourResults] = await Promise.all([
+          Promise.all(sparePromises),
+          Promise.all(labourPromises)
+      ]);
+    //   const query = `UPDATE appointment SET advisor_name = $1,technician_name = $5, jobcard_opened_on = CURRENT_DATE, jobcard_created_by = $1 WHERE appointment_id = $2 AND sp_id = $3 AND jobcard_number = $4 RETURNING *`; 
+    //  const values = [advisor_name,appointment_id, sp_id,jobcard_number,technician_name];  
+      const query = `UPDATE appointment SET jobcard_created_by = $1,advisor_name = $2,technician_name = $3, jobcard_opened_on = CURRENT_DATE,advisor_assigned = $4 WHERE appointment_id = $5 AND sp_id = $6 AND jobcard_number = $7 RETURNING *`; 
+      const values = [jobcard_created_by,advisor_name,technician_name,"Yes",appointment_id, sp_id,jobcard_number];  
+      client.query(query, values)
+
+      console.log('Jobcard data edited successfully!');
+      callback(false, 'Jobcard data edited successfully!');
+  } catch (error) {
+      console.error('Error in editing jobcard : ', error);
+      callback(true, error.message);
+  }
+},
+
+  // To get list of Admin Or Advisor  for opening Job Card 
+  getAllAdminAdvisorEmployee: async (req, callback) => {
+    try {
+     const { sp_id } = req.query;
+     const getall_technician = {
+       text: 'SELECT * FROM service_provider_login_creds WHERE (designation = $1 OR designation = $2) AND sp_id = $3',
+       values: ['Advisor', 'Service Provider Admin', sp_id],
+     };
+     const data = await new Promise((resolve) => {
+       client.query(
+         getall_technician,
+         (err, result) => {
+          if (err){
+           console.log(err)
+           return callback(true, "Unable to fetch the Advisor details");
+          }
+            else {
+              console.log("ln 2091", result.rows)
+             let technican_names = [];
+             technican_names = result.rows.map(({ name, designation }) => `${name} (${designation})`);
+             const resultArray = technican_names.map(technician_name => ({
+               label:technician_name,
+               value:technician_name
+             }));
+             return callback(false, resultArray);
+           }
+         }
+       );
+     });
+    }
+    catch (e){
+     return callback(true, e.message);
+    }
+   },
+
+    // Assigning Admin or Advisor or technician for a car Job Card 
+    // Now this openJobcard Api is not required as it is integrated with updateJobcard
+  // openJobcard: async (req, callback) => {
+  //   try {
+  //    const { sp_id,advisor_name,jobcard_number,appointment_id,technician_name } = req.body;
+  //    const query = `UPDATE appointment SET advisor_name = $1,technician_name = $5, jobcard_opened_on = CURRENT_DATE, jobcard_created_by = $1 WHERE appointment_id = $2 AND sp_id = $3 AND jobcard_number = $4 RETURNING *`; 
+  //    const values = [advisor_name,appointment_id, sp_id,jobcard_number,technician_name];  
+  //    client.query(query, values)
+  //    console.log('Jobcard opened successfully!');
+  //    callback(false, 'Jobcard opened successfully!');  
+  //   }
+  //   catch (e){
+  //    return callback(true, e.message);
+  //   }
+  //  },
+
+  generateInvoice: async (req, callback) => {
+    try {
+      var body = req.body;
+      console.log("ln 1258", body);
+      const { sp_id, appointment_id, jobcard_number, estimate_number, bill_amount, vehicle_number, invoice_generated_by } = req.body;
+  
+      // Generate or retrieve the sequence number
+      const sequenceName = 'invoice_number_seq'; // Replace with your sequence name
+      const { rows } = await client.query(`SELECT nextval('${sequenceName}')`);
+      const invoiceNumber = rows[0].nextval;
+  
+      const query = 'INSERT INTO invoice (invoice_number, appointment_id, jobcard_number, estimate_number, invoice_amount, vehicle_number, invoice_generated_on, payment_status, invoice_created_by, sp_id)  VALUES ($1, $2, $3, $4, $5, $6, CURRENT_DATE, $7, $8, $9) RETURNING *';
+      const values = [invoiceNumber, body.appointment_id, body.jobcard_number, body.estimate_number, body.invoice_amount, body.vehicle_number, 'Pending', body.invoice_created_by, body.sp_id];
+  
+      const data = await new Promise((resolve, reject) => {
+        client.query(query, values, async (err, result) => {
+          if (err) {
+            console.error('Error in creating invoice', err);
+            return callback(true, 'Could not generate invoice');
+          }
+  
+          console.log('Invoice generated successfully!', result.rows);
+  
+          // Now, update the appointment table
+          const updateQuery = 'UPDATE appointment SET invoice_created_by = $1, payment_status = $2,invoice_number = $3,service_completed_on = CURRENT_DATE,invoice_amount = $4 WHERE appointment_id = $5 AND jobcard_number = $6';
+          const updateValues = [body.invoice_created_by, 'Pending',invoiceNumber,body.invoice_amount, body.appointment_id,body.jobcard_number];
+  
+          try {
+            await client.query(updateQuery, updateValues);
+            console.log('Appointment table updated successfully!');
+            return callback(false, result.rows);
+          } catch (updateError) {
+            console.error('Error updating appointment table', updateError);
+            return callback(true, 'Could not update appointment table');
+          }
+        });
+      });
+    } catch (error) {
+      console.error('Error in creating invoice', error);
+      return callback(true, error.message);
+    }
+  },
+
+   recievePayment: async (req, callback) => {
+    try {
+        const { sp_id, invoice_collected_by, payment_method, appointment_id, invoice_number } = req.body;
+
+        // Update invoice table
+        const updateInvoiceQuery = `UPDATE invoice SET invoice_collected_by = $1, invoice_collected_on = CURRENT_DATE , payment_method = $2, payment_status = $3 WHERE invoice_number = $4 AND sp_id = $5 AND appointment_id = $6 RETURNING *`; 
+        const invoiceValues = [invoice_collected_by,payment_method,'Received',invoice_number,sp_id,appointment_id]; 
+        // Update appointment table
+        const updateAppointmentQuery =`UPDATE appointment SET invoice_collected_by = $1, invoice_collected_on = CURRENT_DATE , payment_method = $2, payment_status = $3 WHERE invoice_number = $4 AND sp_id = $5 AND appointment_id = $6 RETURNING *`; 
+        const appointmentValues = [invoice_collected_by,payment_method,'Received',invoice_number,sp_id,appointment_id];
+
+        // Execute both queries in a transaction
+        await client.query('BEGIN');
+        const updateInvoiceResult = await client.query(updateInvoiceQuery, invoiceValues);
+
+        if (updateInvoiceResult.rowCount > 0) {
+            const updateAppointmentResult = await client.query(updateAppointmentQuery, appointmentValues);
+
+            if (updateAppointmentResult.rowCount > 0) {
+                console.log('Payment Received successfully!');
+                callback(false, 'Payment Received successfully!');
+            } else {
+                console.log('No matching records found in appointment table for update.');
+                callback(true, 'No matching records found in appointment table for update.');
+            }
+        } else {
+            console.log('No matching records found in invoice table for update.');
+            callback(true, 'No matching records found in invoice table for update.');
+        }
+        await client.query('COMMIT');
+    } catch (e) {
+        await client.query('ROLLBACK');
+        console.error(e);
+        return callback(true, e.message);
+    }
+},
+
+  updateInvoice: async (req, callback) => {
+    try {
+      var body = req.body;
+      console.log("ln 1258", body);
+      const { sp_id, appointment_id, jobcard_number, estimate_number, bill_amount, vehicle_number, invoice_generated_by } = req.body;
+  
+      // Generate or retrieve the sequence number
+      const sequenceName = 'invoice_number_seq'; // Replace with your sequence name
+      const { rows } = await client.query(`SELECT nextval('${sequenceName}')`);
+      const invoiceNumber = rows[0].nextval;
+  
+      const query = 'INSERT INTO invoice (invoice_number, appointment_id, jobcard_number, estimate_number, invoice_amount, vehicle_number, invoice_generated_on, payment_status, invoice_created_by, sp_id)  VALUES ($1, $2, $3, $4, $5, $6, CURRENT_DATE, $7, $8, $9) RETURNING *';
+      const values = [invoiceNumber, body.appointment_id, body.jobcard_number, body.estimate_number, body.invoice_amount, body.vehicle_number, 'Pending', body.invoice_created_by, body.sp_id];
+  
+      const data = await new Promise((resolve, reject) => {
+        client.query(query, values, async (err, result) => {
+          if (err) {
+            console.error('Error in creating invoice', err);
+            return callback(true, 'Could not generate invoice');
+          }
+  
+          console.log('Invoice generated successfully!', result.rows);
+  
+          // Now, update the appointment table
+          const updateQuery = 'UPDATE appointment SET invoice_created_by = $1, payment_status = $2,invoice_number = $3,service_completed_on = CURRENT_DATE,invoice_amount = $4 WHERE appointment_id = $5 AND jobcard_number = $6';
+          const updateValues = [body.invoice_created_by, 'Pending',invoiceNumber,body.invoice_amount, body.appointment_id,body.jobcard_number];
+  
+          try {
+            await client.query(updateQuery, updateValues);
+            console.log('Appointment table updated successfully!');
+            return callback(false, result.rows);
+          } catch (updateError) {
+            console.error('Error updating appointment table', updateError);
+            return callback(true, 'Could not update appointment table');
+          }
+        });
+      });
+    } catch (error) {
+      console.error('Error in creating invoice', error);
+      return callback(true, error.message);
+    }
+  },
+
+
+  getAllPendingPaymentInvoices: async (req, callback) => {
+    try {
+      const {sp_id,q} = req.query;
+      console.log("ln 1791", sp_id)
+      let queryText = 'SELECT * FROM appointment  WHERE sp_id = $1 AND payment_status = $2'; 
+      const queryParams = [sp_id,'Pending'];
+    
+      if (q) { // This is for search functionality
+        console.log("inside q ln 1739", q); 
+        queryText += ` AND vehicle_number ILIKE $3`; // Added closing parenthesis  
+        queryParams.push(`%${q}%`)
+        console.log("Query Text ln 1742", queryText,queryParams.length ,queryParams);
+      }
+  
+      const get_pending_payment_list = {
+        text: queryText,
+        values: queryParams,
+      };
+  
+      const data = await new Promise((resolve) => {
+        client.query(get_pending_payment_list, (err, result) => {
+          if (err) {
+            console.log(err);
+            return callback(true, "Unable to fetch the jobcard details");
+          } else {
+            const results = {
+              results: result.rows
+            };
+            return callback(false, results);
+          }
+        });
+      });
+    } catch (e) {
+      return callback(true, e.message);
+    }
+  },
+
+  getAllPaidInvoices: async (req, callback) => {
+    try {
+      const {sp_id,q} = req.query;
+      console.log("ln 1791", sp_id)
+      let queryText = 'SELECT * FROM appointment  WHERE sp_id = $1 AND payment_status = $2'; 
+      const queryParams = [sp_id,'Received'];
+    
+      if (q) { // This is for search functionality
+        console.log("inside q ln 1739", q); 
+        queryText += ` AND (vehicle_number ILIKE $3 OR name ILIKE $3)`; // Added closing parenthesis  
+        queryParams.push(`%${q}%`)
+        console.log("Query Text ln 1742", queryText,queryParams.length ,queryParams);
+      }
+  
+      const get_pending_payment_list = {
+        text: queryText,
+        values: queryParams,
+      };
+  
+      const data = await new Promise((resolve) => {
+        client.query(get_pending_payment_list, (err, result) => {
+          if (err) {
+            console.log(err);
+            return callback(true, "Unable to fetch the Invoice details");
+          } else {
+            const results = {
+              results: result.rows
+            };
+            return callback(false, results);
+          }
+        });
+      });
+    } catch (e) {
+      return callback(true, e.message);
+    }
+  },
+
+  // Get All vehcile list to create Appointment dialog on SP end.
+
+  getAllVehicleList: async (req, callback) => {
+    try {
+  
+      // console.log("ln 1669", req.body);
+      // console.log("ln 1670", req.query)
+      const {q} = req.query;
+      console.log("ln 1330 q", q)
+      let queryText = 'SELECT vehicle_number FROM customer_vehicle_data'; 
+      const queryParams = [];
+      if (q) { // This is for search functionality
+        queryText += ' WHERE (vehicle_number ILIKE $1)';
+        console.log(queryText, "ln 1393")
+        queryParams.push(`${q}%`);
+        console.log("ln 1610",queryParams)
+      }
+      // console.log("ln 1395", queryParams, queryText)
+      const get_all_vehicles = {
+        text: queryText,
+        values: queryParams,
+      };
+  
+      const data = await new Promise((resolve) => {
+        client.query(get_all_vehicles, (err, result) => {
+          if (err) {
+            console.log(err);
+            return callback(true, "Unable to fetch the vehicle details");
+          } else {
+              const listOfVehicleNumbers = result.rows.map(item => ({ label: item.vehicle_number, value: item.vehicle_number }));
+            return callback(false, listOfVehicleNumbers);
+          }
+        });
+      });
+    } catch (e) {
+      return callback(true, e.message);
+    }
+  },
+
+  // Get specific vehcile detail to create appointment From service provider end.
+  getSpecificVehicleDetailsForSpAppt: async (req, callback) => {
+    try {
+
+      const {vehicle_number } = req.query;
+      console.log("ln 1639 ", vehicle_number)
+      let queryText =
+        'SELECT *  FROM customer_vehicle_data  WHERE vehicle_number = $1';
+      const queryParams = [vehicle_number];
+      const get_spare = {
+        text: queryText,
+        values: queryParams,
+      };
+  
+      const data = await new Promise((resolve) => {
+        client.query(get_spare, (err, result) => {
+          if (err) {
+            console.log(err);
+            return callback(true, "Unable to fetch the vehicle details");
+          } else {
+            // console.log("ln 1720 ", result.rows);
+            return callback(false, result.rows[0]);
+          }
+        });
+      });
+    } catch (e) {
+      return callback(true, e.message);
+    }
+  },
+
+  
 
 
 

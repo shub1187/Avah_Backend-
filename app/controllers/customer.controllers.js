@@ -19,6 +19,8 @@ const {
     cancelAppointment,
     getAllPendingApprovedAppointment,
     getAllRejectedCancelledAppointment,
+    estimateApprovalFromCustomer,
+    estimateRejectedByCustomer
    
 } = require("../models/customer.models.js")
 
@@ -371,6 +373,42 @@ module.exports = {
                         message: `${results.name} your profile has been updated successfully`,
                     });
                 }
+            });
+        },
+
+        estimateApprovalFromCustomer: (req, res) => {
+            estimateApprovalFromCustomer(req, (err, results) => {
+                if (err)
+                    res.status(500).send({
+                        error: true,
+                        // message: results || "Something Went wrong. Please try again later",
+                        message : 'Error in approving customer'
+                    });
+                else
+                    res.send({
+                        error: false,
+                        results : results,
+                        message : 'Estimate Approved Successfully',
+                        status_code : 200
+                    });
+            });
+        },
+
+        estimateRejectedByCustomer : (req, res) => {
+            estimateRejectedByCustomer (req, (err, results) => {
+                if (err)
+                    res.status(500).send({
+                        error: true,
+                        // message: results || "Something Went wrong. Please try again later",
+                        message : 'Error in approving customer'
+                    });
+                else
+                    res.send({
+                        error: false,
+                        results : results,
+                        message : 'Estimate Rejected Successfully',
+                        status_code : 200
+                    });
             });
         },
 

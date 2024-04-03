@@ -17,6 +17,8 @@ const {register,
     cancelAppointment,
     getAllPendingApprovedAppointment,
     getAllRejectedCancelledAppointment,
+    estimateApprovalFromCustomer,
+    estimateRejectedByCustomer,
     profile_completion_with_image} 
     = require("../controllers/customer.controllers.js");
 const router = require("express").Router();
@@ -48,5 +50,9 @@ router.post("/profileCompletionWithImage",checkToken,profile_completion_with_ima
 
 router.post("/createAppointment", checkToken, createAppointment);
 router.post("/cancelAppointment", checkToken, cancelAppointment);
+
+//Estimate 
+router.post("/estimateApproval", checkToken, estimateApprovalFromCustomer);
+router.post("/estimateRejection", checkToken, estimateRejectedByCustomer);
 
 module.exports = router;

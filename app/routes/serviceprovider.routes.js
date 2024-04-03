@@ -1,11 +1,8 @@
 const {
     register,
     login,
-    getAllUsers,
-    createUser,
     createAppointment,
     getAllModelPerBrand,
-    getUserById,
     updateUserDetail,
     deleteUser,
     getUserSearch,
@@ -52,7 +49,18 @@ const {
     getAllPermissionPerRoles,
     getNotificationNumbers,
     deleteEmployeeRole,
-    editEmployeeRole
+    editEmployeeRole,
+    getAllCreatedJobcardList,
+    getJobcardDetails,
+    updateJobcard,
+    getAllAdminAdvisorEmployee,
+    openJobcard,
+    generateInvoice,
+    getAllPendingPaymentInvoices,
+    recievePayment,
+    getAllPaidInvoices,
+    getAllVehicleList,
+    getSpecificVehicleDetailsForSpAppt
 } = require("../controllers/serviceproviders.controllers.js");
 const router = require("express").Router();
 const { checkToken } = require("../middlewares/auth_validation");
@@ -66,10 +74,6 @@ router.post("/login", login);
 
 // Registeration Router
 router.post("/registerServiceProvider",register)
-
-router.get("/getAllUsers", checkToken, getAllUsers);
-router.post("/createUser", checkToken, createUser);
-router.post("/getUserById", checkToken, getUserById);
 router.post("/updateUserDetail", checkToken, updateUserDetail);
 router.post("/deleteUser", checkToken, deleteUser);
 router.get("/getUserSearch", checkToken, getUserSearch);
@@ -78,7 +82,7 @@ router.post("/updateUserPassword", checkToken, updateUserPassword);
 
 //employee
 router.get("/getAllEmployee", checkToken, getAllEmployee);
-router.get("/getAllTechnicianEmployee", checkToken, getAllTechnicianEmployee);
+
 router.post("/createEmployee", checkToken, createEmployee);
 router.post("/getEmployeeById", checkToken, getEmployeeById);
 router.post("/updateEmployeeDetail", checkToken, updateEmployeeDetail);
@@ -93,6 +97,8 @@ router.get("/getAllAppointment", checkToken, getAllAppointment);
 router.get("/getAllModelPerBrand", checkToken, getAllModelPerBrand);
 router.get("/getAllPendingAppointment", checkToken, getAllPendingAppointment);
 router.get("/getAllRejectedAndCancelledAppointment", checkToken, getAllRejectedAndCancelledAppointment);
+router.get("/getAllVehicleList", checkToken, getAllVehicleList);
+router.get("/getSpecificVehicleDetailsForSpAppt", checkToken, getSpecificVehicleDetailsForSpAppt);
 
 router.post("/approveCustAppointment", checkToken, spApprovalOfCustAppointment); // Currently Not in Use
 
@@ -124,6 +130,20 @@ router.get("/getAllLabourListForAutoFill", checkToken, getAllLabourListForAutoFi
 router.get("/getAllSpareListForAutoFill", checkToken, getAllSpareListForAutoFill);
 router.get("/getSpecificVechicleDetailsToCreateEstimate", checkToken, getSpecificVechicleDetailsToCreateEstimate);
 router.get("/getAllCreatedEstimateList", checkToken, getAllCreatedEstimateList);
+
+// Jobcard
+router.get("/getAllCreatedJobcardList",checkToken,getAllCreatedJobcardList);
+router.get("/getJobcardDetails",checkToken,getJobcardDetails);
+router.post("/updateJobcard", checkToken, updateJobcard);
+router.get("/getAllAdminAdvisorEmployee",checkToken,getAllAdminAdvisorEmployee);
+router.get("/getAllTechnicianEmployee", checkToken, getAllTechnicianEmployee);
+router.post("/openJobcard", checkToken, openJobcard);
+
+// Invoice
+router.post("/generateInvoice", checkToken, generateInvoice);
+router.get("/getAllPendingPaymentInvoices", checkToken, getAllPendingPaymentInvoices);
+router.post("/recievePayment", checkToken, recievePayment);
+router.get("/getAllPaidInvoices", checkToken, getAllPaidInvoices);
 
 
 //MISC 
