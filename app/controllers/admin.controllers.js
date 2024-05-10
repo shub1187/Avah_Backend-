@@ -60,6 +60,16 @@ const {
   updateServiceCategoryDetail,
   deleteServiceCategory,
   getServiceCategorySearch,
+ 
+  
+
+  getAllCustomers,
+  getAllRejectedSp,
+  getAllApprovedSp,
+  reset_password,
+  getAllBrandsAutoFill,
+  getAllFuelTypeAutoFill,
+  getStatistics
 } = require("../models/admin.models.js");
 const {
   sign
@@ -73,7 +83,7 @@ module.exports = {
           message: results || "Something Went wrong. Please try again later",
         });
       else {
-        console.log("This is result id ln 73 from models",results.id) // 
+        // console.log("This is result id ln 73 from models",results.id) 
         const toCreateToken = {
           id: results.id,
           role: "admin",
@@ -81,10 +91,11 @@ module.exports = {
         const jsontoken = sign(toCreateToken, "avah100token", {
           // expiresIn: "1h"
         });
-        console.log("This the avah token",jsontoken)
+        // console.log("This the avah token",jsontoken)
+        console.log("ln 85", results)
         res.send({
           error: false,
-          message: "success",
+          message: `${results[0].name} you have logged in successfully`,
           data: results,
           token: jsontoken,
         });
@@ -126,6 +137,125 @@ module.exports = {
         });
     });
   },
+
+  getAllCustomers: (req, res) => {
+    getAllCustomers(req, (err, results) => {
+      if (err)
+        res.status(500).send({
+          error: true,
+          message: results || "Something Went wrong. Please try again later",
+        });
+      else {
+        // console.log("ln 102 from admin controller",results)
+        res.send({
+          error: false,
+          message: "Customer list fetched successfully",
+          data: results,     
+        });
+      }
+    });
+  },
+
+  getAllRejectedSp: (req, res) => {
+    getAllRejectedSp(req, (err, results) => {
+      if (err)
+        res.status(500).send({
+          error: true,
+          message: results || "Something Went wrong. Please try again later",
+        });
+      else {
+        // console.log("ln 102 from admin controller",results)
+        res.send({
+          error: false,
+          message: "Rejected service providers list fetched successfully",
+          data: results,     
+        });
+      }
+    });
+  },
+
+  getAllApprovedSp: (req, res) => {
+    getAllApprovedSp(req, (err, results) => {
+      if (err)
+        res.status(500).send({
+          error: true,
+          message: results || "Something Went wrong. Please try again later",
+        });
+      else {
+        // console.log("ln 102 from admin controller",results)
+        res.send({
+          error: false,
+          message: "Approved service providers list fetched successfully",
+          data: results,     
+        });
+      }
+    });
+  },
+
+  getStatistics: (req, res) => {
+    getStatistics(req, (err, results) => {
+      if (err)
+        res.status(500).send({
+          error: true,
+          message: results || "Something Went wrong. Please try again later",
+        });
+      else {
+        // console.log("ln 102 from admin controller",results)
+        res.send({
+          error: false,
+          data: results,     
+        });
+      }
+    });
+  },
+
+   // Reset Password  of Admin  when he forgets it
+   reset_password: (req, res) => {
+    reset_password(req, (err, results) => {
+        if (err)
+            res.status(500).send({
+                error: true,
+                message: results || "Something Went wrong. Please try again later",
+            });
+        else {     
+            res.send({
+                error: false,
+                // result : results,
+                message: `${results.name} your password has been updated successfully`,
+            });
+        }
+    });
+},
+
+getAllBrandsAutoFill: (req,res)=>{
+  getAllBrandsAutoFill(req, (err,results)=>{
+    if (err)
+      res.status(500).send({
+        error: true,
+        message: results || "Something Went wrong. Please try again later",
+      });
+    else
+      res.send({
+        error: false,
+        data: results
+      });
+  });
+},
+
+getAllFuelTypeAutoFill: (req,res)=>{
+  getAllFuelTypeAutoFill(req, (err,results)=>{
+    if (err)
+      res.status(500).send({
+        error: true,
+        message: results || "Something Went wrong. Please try again later",
+      });
+    else
+      res.send({
+        error: false,
+        data: results
+      });
+  });
+},
 
 
   getAllUsers: (req, res) => {
@@ -395,7 +525,7 @@ module.exports = {
       else
         res.send({
           error: false,
-          message: "success",
+          message: "Brand list fetched successfully",
           data: results,
         });
     });

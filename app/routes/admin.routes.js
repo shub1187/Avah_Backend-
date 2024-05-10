@@ -60,6 +60,14 @@ const {
   updateServiceCategoryDetail,
   deleteServiceCategory,
   getServiceCategorySearch,
+
+  getAllCustomers,
+  getAllRejectedSp,
+  getAllApprovedSp,
+  reset_password,
+  getAllBrandsAutoFill,
+  getAllFuelTypeAutoFill,
+  getStatistics
 } = require("../controllers/admin.controllers.js");
 const router = require("express").Router();
 const { checkToken } = require("../middlewares/auth_validation");
@@ -67,11 +75,13 @@ const { checkToken } = require("../middlewares/auth_validation");
 
 //common
 router.post("/login", login);
+router.post("/resetPassword",reset_password);
+
+//Admin stats /Dashboard
+router.get("/getStatistics", checkToken, getStatistics );
 
 //user
 router.get("/getAllUsers", checkToken, getAllUsers);
-// router.get("/getAllUsers", getAllUsers); // checking by shub
-// router.post("/createUser", checkToken, createUser);
 router.post("/createUser", createUser);
 router.post("/getUserById", checkToken, getUserById);
 router.post("/updateUserDetail", checkToken, updateUserDetail);
@@ -79,6 +89,10 @@ router.post("/deleteUser", checkToken, deleteUser);
 router.get("/getUserSearch", checkToken, getUserSearch);
 router.post("/updatePassword", checkToken, updatePassword);
 router.post("/updateUserActive", checkToken, updateUserActive);
+
+//Vehicles
+router.get("/getAllBrandsAutoFill", checkToken,getAllBrandsAutoFill);
+router.get("/getAllFuelTypeAutoFill", checkToken,getAllFuelTypeAutoFill);
 
 //serviceprovider
 router.get("/spRequest",checkToken,spRequest) // Added by shubham need to add checkToken once integrated
@@ -103,6 +117,13 @@ router.post(
   checkToken,
   updateServiceProviderDetail
 );
+
+// Users
+router.get("/getAllCustomers", checkToken, getAllCustomers);
+router.get("/getAllRejectedSp", checkToken, getAllRejectedSp);
+router.get("/getAllApprovedSp", checkToken, getAllApprovedSp);
+
+
 
 //brands
 router.get("/getAllBrands", checkToken, getAllBrands);

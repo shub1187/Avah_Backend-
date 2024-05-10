@@ -19,7 +19,8 @@ const {register,
     getAllRejectedCancelledAppointment,
     estimateApprovalFromCustomer,
     estimateRejectedByCustomer,
-    profile_completion_with_image} 
+    profile_completion_with_image,
+    reset_password} 
     = require("../controllers/customer.controllers.js");
 const router = require("express").Router();
 const { checkToken } = require("../middlewares/auth_validation");
@@ -45,7 +46,7 @@ router.get("/getSpDetailsPerCity",checkToken,getAllSpDetailsAsPerCustomerCity)
 router.get("/getAllPendingApprovedAppointment",checkToken,getAllPendingApprovedAppointment) 
 router.get("/getAllRejectedCancelledAppointment",checkToken,getAllRejectedCancelledAppointment) 
 router.post("/profileCompletionWithImage",checkToken,profile_completion_with_image) // Token required as functionality is up post login
-
+router.post("/resetPassword",reset_password)
 
 
 router.post("/createAppointment", checkToken, createAppointment);

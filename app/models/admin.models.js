@@ -21,7 +21,7 @@ module.exports = {
 // Admin Login Super user - Shubham
   login: async (req, callback) => {
     try {
-      console.log("ln 24",req.body)
+      // console.log("ln 24",req.body)
       const_login_query = {text: 'SELECT * FROM admin WHERE email = $1 AND password = $2 AND role = $3',
       values: [req.body.email, req.body.password, req.body.role]}
         const data = await new Promise((resolve) => {
@@ -29,7 +29,7 @@ module.exports = {
             const_login_query, 
             (err,data)=>{
             if (data.rows.length === 1) {  // Login successfull
-              console.log("ln 44",data.rows.length)
+              // console.log("ln 44",data.rows.length)
               return callback(false, data.rows);
             } else {
               return callback(true, "Kindly Enter Correct Credentials");
@@ -38,14 +38,14 @@ module.exports = {
           );
         });
     } catch (e) {
-      console.log("ln 46:" ,e)
+      // console.log("ln 46:" ,e)
       callback(true, e.message);
     }
   },
 
   approveServiceProvider : async (req, callback) => {
     try {
-      const { email, approval_status, sp_status } = req.body;
+      const { email, approval_status, sp_status,sp_rejection_note } = req.body;
   
       // Update the pending_request_sp_dealer table
       const updateQuery = {
@@ -62,7 +62,7 @@ module.exports = {
 
         // Insert into approved_service_providers table
         const insertQuery = {
-            text: 'INSERT INTO approved_service_providers (name, email, business_name, business_type, document, password,approval_status,role,business_address,sp_status,business_contact,state,city,pin_code,full_address,is_deleted) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,$13,$14,$15,$16)',
+            text: 'INSERT INTO approved_service_providers (name, email, business_name, business_type, document, password,approval_status,role,business_address,sp_status,business_contact,state,city,pin_code,full_address,is_deleted,permission_granted) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,$13,$14,$15,$16,$17)',
             // values: [...Object.values(insertValues), false]
             values : [   insertValues.name,
               insertValues.email,
@@ -79,7 +79,8 @@ module.exports = {
               insertValues.city,
               insertValues.pin_code,
               insertValues.full_address,
-              false // The value you were adding
+              false,// The value you were adding
+              ['All']
             ]
         };
         await client.query(insertQuery); 
@@ -93,10 +94,10 @@ module.exports = {
       }
       // Admin does not want to approve the service provider
       else if (approval_status == false){
-        console.log("entered 91")
+        // console.log("entered 91")
         const deleteQuery = {
-          text: 'UPDATE pending_request_sp_dealer SET is_deleted = $1  WHERE email = $2',
-          values: [true,email]
+          text: 'UPDATE pending_request_sp_dealer SET is_deleted = $1, sp_rejection_note = $3, sp_status = $4  WHERE email = $2',
+          values: [true,email,sp_rejection_note,'Inactive']
         };
         await client.query(deleteQuery);
         return callback(false, 'Service Provider Deleted from the system succesfully');
@@ -110,37 +111,12 @@ module.exports = {
 
   // Api for request tab get the pending_sp_request for approval
   spRequest: async (req, callback) => {
-    // Old code 
-    // try {
-    //   const request_query = {text: 'SELECT * FROM pending_request_sp_dealer'}
-    //     const data = await new Promise((resolve) => {
-    //       client.query(
-    //         request_query, 
-    //         (err,result)=>{
-    //         if (result?.rows?.length > 0) {  // if there is any sp or dealer pending for approval
-    //           // console.log("ln 44",data.rows.length)
-    //           return callback(false, result);
-    //         } else {
-    //           return callback(true, "There are no pending request from service provider and dealer for approval");
-    //         }
-    //       } 
-    //       );
-    //     });
-    // } catch (e) {
-    //   console.log("ln 46:" ,e)
-    //   callback(true, e.message);
-    // }
-
-    // old code ends
-
-    // Pagination code starts 
-
     try {
       const page = parseInt(req.query.page, 10) || 1;
       const limit = parseInt(req.query.limit, 10) || 10;
       const offset = (page - 1) * limit;
   
-      console.log("ln 124", req.query.page, req.query.limit);
+      // console.log("ln 124", req.query.page, req.query.limit);
       const getall_pending_sp_query = {
         text: 'SELECT * FROM pending_request_sp_dealer WHERE is_deleted = false ORDER BY register_sp_id  DESC  LIMIT $1 OFFSET $2',
         values: [limit, offset],
@@ -151,7 +127,7 @@ module.exports = {
         client.query(
           getall_pending_sp_query,
           (err, result) => {
-            console.log("ln 435", result);
+            // console.log("ln 435", result);
             if (result?.rows?.length > 0) {
               const row_function = async () => {
                 const countQuery = { text: 'SELECT COUNT(*) as total FROM  pending_request_sp_dealer' };
@@ -197,63 +173,7 @@ module.exports = {
       // console.log(data.rows)
       let full_data = data.rows
        return callback((false), full_data);
-      // console.log(req.page);
-      // var numRows;
-      // var queryPagination;
-      // var numPerPage = parseInt(req.query.numberPerPage, 10) || 2000;
-      // var page = parseInt(req.query.page, 10) || 0;
-      // var numPages;
-      // var skip = page * numPerPage;
-      // // Here we compute the LIMIT parameter for MySQL query
-      // var limit = skip + "," + numPerPage;
-      // const data = await new Promise((resolve) => {
-      //   sql.query(
-      //     "SELECT count(*) as numRows FROM users WHERE is_deleted=0",
-      //     (err, sqlResult) => {
-      //       resolve(sqlResult);
-      //     }
-      //   );
-      // });
-      // console.log(data);
-      // if (data) {
-      //   numRows = data[0].numRows;
-      //   numPages = Math.ceil(numRows / numPerPage);
-      //   console.log("number of pages:", numPages);
-      //   const data2 = await new Promise((resolve) => {
-      //     sql.query(
-      //       "SELECT * FROM users WHERE is_deleted=0 ORDER BY ID DESC LIMIT " +
-      //       limit,
-      //       (err, sqlResult) => {
-      //         resolve(sqlResult);
-      //       }
-      //     );
-      //   });
-      //   if (data2) {
-      //     var responsePayload = {
-      //       results: data2,
-      //     };
-      //     if (page < numPages) {
-      //       responsePayload.pagination = {
-      //         current: page,
-      //         perPage: numPerPage,
-      //         totalPage: numPages,
-      //         previous: page > 0 ? page - 1 : undefined,
-      //         next: page < numPages - 1 ? page + 1 : undefined,
-      //       };
-      //     } else
-      //       responsePayload.pagination = {
-      //         err: "queried page " +
-      //           page +
-      //           " is >= to maximum page number " +
-      //           numPages,
-      //       };
-      //     return callback(false, responsePayload);
-      //   } else {
-      //     return callback(true, "No data found");
-      //   }
-      // } else {
-      //   return callback(true, "No data found");
-      // }
+   
     } catch (e) {
       console.log(e.message, "ln 112")
     }
@@ -489,81 +409,6 @@ module.exports = {
   },
 
   getAllServiceProviders: async (req, callback) => {
-    // try {
-    //   const page = parseInt(req.query.page, 10) || 1;
-    // const limit = parseInt(req.query.limit, 10) || 10;
-    // const offset = (page - 1) * limit;
-   
-    // console.log("ln 422",req.query.page,req.query.limit)
-    //  // const getall_sp_query = {text: 'SELECT * FROM approved_service_providers WHERE is_deleted = false'}
-    // const getall_sp_query = {
-    //   text: 'SELECT * FROM approved_service_providers WHERE is_deleted = false ORDER BY ID DESC LIMIT $1 OFFSET $2',
-    //   values: [limit, offset],
-    // };
-    // console.log("ln 430",getall_sp_query)
-    //     const data = await new Promise((resolve) => {
-    //       client.query(
-    //         getall_sp_query, 
-    //         (err,result)=>{
-    //           console.log("ln435",result)
-    //         if (result?.rows?.length > 0) {  //
-    //             const row_function = async ()=>{
-    //               const countQuery = { text: 'SELECT COUNT(*) as total FROM approved_service_providers WHERE is_deleted = false' };
-    //               const countResult = await client.query(countQuery);
-    //               const totalRows = countResult.rows[0].total;
-    //               const totalPages = Math.ceil(totalRows / limit);
-
-    //               const responsePayload = {
-    //                 resdata: result.rows,
-    //                 pagination: {
-    //                   currentPage: page,
-    //                   totalPages: totalPages,
-    //                   totalRows: totalRows,
-    //                 },
-    //               };
-    //             }
-    //             row_function();
-    //             console.log("ln 453 from admin model",responsePayload)
-    //           return callback(false, responsePayload);
-    //         } else {
-    //           return callback(true, "There are no service providers in the system");
-    //         }
-    //       } 
-    //       );
-    //     });
-
-
-    // From ChatGpt
-    // const page = parseInt(req.query.page, 10) || 1;
-    // const limit = parseInt(req.query.limit, 10) || 10;
-    // const offset = (page - 1) * limit;
-
-    // const query = {
-    //   text: 'SELECT * FROM approved_service_providers WHERE is_deleted = false ORDER BY ID DESC LIMIT $1 OFFSET $2',
-    //   values: [limit, offset],
-    // };
-
-    // const result = await client.query(query);
-    // const data = result.rows;
-
-    // // Get the total number of rows for calculating total pages
-    // const countQuery = { text: 'SELECT COUNT(*) as total FROM approved_service_providers WHERE is_deleted = false' };
-    // const countResult = await client.query(countQuery);
-    // const totalRows = countResult.rows[0].total;
-    // const totalPages = Math.ceil(totalRows / limit);
-
-    // const responsePayload = {
-    //   data: data,
-    //   pagination: {
-    //     currentPage: page,
-    //     totalPages: totalPages,
-    //     totalRows: totalRows,
-    //   },
-    // };
-
-
-
-
     try {
       const page = parseInt(req.query.page, 10) || 1;
       const limit = parseInt(req.query.limit, 10) || 10;
@@ -848,7 +693,7 @@ module.exports = {
       // Update the pending_request_sp_dealer table
       const delete_query = {
         text: 'UPDATE approved_service_providers SET sp_status = $1, approval_status = $2, is_deleted = $3 WHERE email = $4 RETURNING *',
-        values: ["inactive",false, true, req.body.email]
+        values: ["Inactive",false, true, req.body.email]
       };
         const data = await new Promise((resolve) => {
           client.query(
@@ -870,70 +715,9 @@ module.exports = {
   },
 
   getAllBrands: async (req, callback) => {
-    // try {
-    //   console.log(req.page);
-    //   var numRows;
-    //   var queryPagination;
-    //   var numPerPage = parseInt(req.query.numberPerPage, 10) || 2000;
-    //   var page = parseInt(req.query.page, 10) || 0;
-    //   var numPages;
-    //   var skip = page * numPerPage;
-    //   // Here we compute the LIMIT parameter for MySQL query
-    //   var limit = skip + "," + numPerPage;
-    //   const data = await new Promise((resolve) => {
-    //     sql.query(
-    //       "SELECT count(*) as numRows FROM brands WHERE is_deleted=0",
-    //       (err, sqlResult) => {
-    //         resolve(sqlResult);
-    //       }
-    //     );
-    //   });
-    //   console.log(data);
-    //   if (data) {
-    //     numRows = data[0].numRows;
-    //     numPages = Math.ceil(numRows / numPerPage);
-    //     console.log("number of pages:", numPages);
-    //     const data2 = await new Promise((resolve) => {
-    //       sql.query(
-    //         "SELECT * FROM brands WHERE is_deleted=0 ORDER BY ID DESC LIMIT " +
-    //         limit,
-    //         (err, sqlResult) => {
-    //           resolve(sqlResult);
-    //         }
-    //       );
-    //     });
-    //     if (data2) {
-    //       var responsePayload = {
-    //         results: data2,
-    //       };
-    //       if (page < numPages) {
-    //         responsePayload.pagination = {
-    //           current: page,
-    //           perPage: numPerPage,
-    //           totalPage: numPages,
-    //           previous: page > 0 ? page - 1 : undefined,
-    //           next: page < numPages - 1 ? page + 1 : undefined,
-    //         };
-    //       } else
-    //         responsePayload.pagination = {
-    //           err: "queried page " +
-    //             page +
-    //             " is >= to maximum page number " +
-    //             numPages,
-    //         };
-    //       return callback(false, responsePayload);
-    //     } else {
-    //       return callback(true, "No data found");
-    //     }
-    //   } else {
-    //     return callback(true, "No data found");
-    //   }
-    // } catch (e) {
-    //   callback(true, e);
-    // }
     try {
       const getall_brands = {
-        text: 'SELECT * FROM brands',
+        text: 'SELECT * FROM brands WHERE is_deleted = false',
       };
       const data = await new Promise((resolve) => {
         client.query(
@@ -945,12 +729,7 @@ module.exports = {
            }
              else {
               const results = {
-                results: result.rows,
-                pagination: {
-                  currentPage: 1,
-                  totalPages: 1,
-                  totalRows: "9",
-                },
+                results: result.rows
               };
               return callback(false, results);
             }
@@ -2350,4 +2129,347 @@ module.exports = {
       callback(true, e);
     }
   },
+
+  // Get list of all the customer 
+  getAllCustomers: async (req, callback) => {
+    try {
+      const { q, _page, _limit } = req.query;
+      // console.log("ln 1289 q", q, _page, _limit);
+      let queryText = 'SELECT * FROM customer_registration';
+      const queryParams = [];
+  
+      // If search query is provided, modify the query to include search conditions
+      if (q) {
+        console.log("inside q ln 1291", q);
+        queryText += `
+          WHERE name ILIKE $${queryParams.length + 1} || '%'
+          OR email ILIKE $${queryParams.length + 2} || '%'
+        `;
+        for (let i = 0; i < 2; i++) {
+          queryParams.push(`%${q}%`);
+        }
+      }
+  
+      // This is for pagination
+      // Always include ORDER BY clause
+      queryText += ' ORDER BY customer_id DESC LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
+      queryParams.push(_limit, (_page - 1) * _limit);
+      // console.log("ln 1298", queryText, queryParams);
+  
+      const get_all_customers = {
+        text: queryText,
+        values: queryParams,
+      };
+  
+      const data = await new Promise((resolve) => {
+        client.query(get_all_customers, (err, result) => {
+          if (err) {
+            console.log(err);
+            return callback(true, "Unable to fetch the customer details");
+          } else {
+            const results = {
+              results: result.rows
+            };
+            return callback(false, results);
+          }
+        });
+      });
+    } catch (e) {
+      return callback(true, e.message);
+    }
+  },
+
+   // Get list of all the rejected service providers 
+   getAllRejectedSp: async (req, callback) => {
+    try {
+      const { q, _page, _limit } = req.query;
+      // console.log("ln 1289 q", q, _page, _limit);
+      let queryText = 'SELECT * FROM pending_request_sp_dealer WHERE approval_status = $1 AND is_deleted = $2 ';
+      const queryParams = [false,true];
+  
+     // If search query is provided, modify the query to include search conditions
+        if (q) {
+          console.log("inside q ln 1291", q);
+          if (!queryText.includes('WHERE')) {
+            queryText += ' WHERE ';
+          } else {
+            queryText += ' AND ';
+          }
+          queryText += `
+            (name ILIKE $${queryParams.length + 1}
+            OR email ILIKE $${queryParams.length + 2})
+          `;
+          for (let i = 0; i < 2; i++) {
+            queryParams.push(`%${q}%`);
+          }
+        }
+
+  
+      // This is for pagination
+      // Always include ORDER BY clause
+      queryText += ' ORDER BY register_sp_id DESC LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
+      queryParams.push(_limit, (_page - 1) * _limit);
+      // console.log("ln 1298", queryText, queryParams);
+  
+      const get_all_rejected_sp = {
+        text: queryText,
+        values: queryParams,
+      };
+  
+      const data = await new Promise((resolve) => {
+        client.query(get_all_rejected_sp, (err, result) => {
+          if (err) {
+            console.log(err);
+            return callback(true, "Unable to fetch the rejected service providers details");
+          } else {
+            const results = {
+              results: result.rows
+            };
+            return callback(false, results);
+          }
+        });
+      });
+    } catch (e) {
+      return callback(true, e.message);
+    }
+  },
+
+  getAllApprovedSp: async (req, callback) => {
+    try {
+      const { q, _page, _limit } = req.query;
+      console.log("ln 1289 q", q, _page, _limit);
+      // let queryText = 'SELECT * FROM pending_request_sp_dealer WHERE is_deleted = $1';
+      let queryText = 'SELECT * FROM approved_service_providers WHERE is_deleted = $1'
+      const queryParams = [false];
+  
+     // If search query is provided, modify the query to include search conditions
+        if (q) {
+          // console.log("inside q ln 1291", q);
+          if (!queryText.includes('WHERE')) {
+            queryText += ' WHERE ';
+          } else {
+            queryText += ' AND ';
+          }
+          queryText += `
+            (name ILIKE $${queryParams.length + 1}
+            OR email ILIKE $${queryParams.length + 2})
+          `;
+          for (let i = 0; i < 2; i++) {
+            queryParams.push(`%${q}%`);
+          }
+        }
+
+  
+      // This is for pagination
+      // Always include ORDER BY clause
+      queryText += ' ORDER BY sp_id DESC LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
+      queryParams.push(_limit, (_page - 1) * _limit);
+      console.log("ln 1298", queryText, queryParams);
+  
+      const get_all_approved_sp = {
+        text: queryText,
+        values: queryParams,
+      };
+  
+      const data = await new Promise((resolve) => {
+        client.query(get_all_approved_sp, (err, result) => {
+          if (err) {
+            console.log(err);
+            return callback(true, "Unable to fetch the approved service providers details");
+          } else {
+            const results = {
+              results: result.rows
+            };
+            return callback(false, results);
+          }
+        });
+      });
+    } catch (e) {
+      return callback(true, e.message);
+    }
+  },
+
+   // Reset Password -- Forgot password 
+   reset_password: async (req, callback) => { // As per new inputs
+    try {
+      var body = req.body;
+    
+      // Define the SQL query to update the profile
+      const query = 'UPDATE admin SET password = $1 WHERE email = $2 RETURNING name, email';
+      
+      const values = [body.password, body.email];
+      
+      const data = await new Promise((resolve) => {
+        client.query(query, values, (err, result) => {
+          if (err) {
+            return callback(true, 'Failed to reset password.');
+          } else {
+            if (result.rows.length > 0) {
+              console.log(result.rows[0])
+              // Password Updated successfully
+              return callback(false, result.rows[0]);
+            } else {
+              // No matching email found
+              return callback(true, 'Email not found');
+            }
+          }
+        });
+      });
+    } catch (error) {
+      return callback(true, error.message);
+    }
+  },
+
+  // Used To add new model
+  getAllBrandsAutoFill: async (req, callback) => {
+    try {
+      const { sp_id,q} = req.query;
+      console.log("ln 1330 q", q, sp_id)
+      let queryText = 'SELECT * FROM brands  WHERE  is_deleted = $1'; 
+      const queryParams = [false];
+      const get_all_brands = {
+        text: queryText,
+        values: queryParams,
+      };
+  
+      const data = await new Promise((resolve) => {
+        client.query(get_all_brands, (err, result) => {
+          if (err) {
+            console.log(err);
+            return callback(true, "Unable to fetch the Brands");
+          } else {
+              const listofBrandsForAutofill = result.rows.map(item => ({ label: item.brand_name, value: item.brand_name }));
+            return callback(false, listofBrandsForAutofill);
+          }
+        });
+      });
+    } catch (e) {
+      return callback(true, e.message);
+    }
+  },
+
+  // Used To add new model
+  getAllFuelTypeAutoFill: async (req, callback) => {
+    try {
+      const { sp_id,q} = req.query;
+      let queryText = 'SELECT * FROM fuels  WHERE  is_deleted = $1'; 
+      const queryParams = [false];
+      const get_all_fuel_type = {
+        text: queryText,
+        values: queryParams,
+      };
+  
+      const data = await new Promise((resolve) => {
+        client.query(get_all_fuel_type, (err, result) => {
+          if (err) {
+            console.log(err);
+            return callback(true, "Unable to fetch the Brands");
+          } else {
+              const listofFuelForAutofill = result.rows.map(item => ({ label: item.fuel_name, value: item.fuel_name }));
+            return callback(false, listofFuelForAutofill);
+          }
+        });
+      });
+    } catch (e) {
+      return callback(true, e.message);
+    }
+  },
+
+  getStatistics: async (req, callback) => {
+    try {
+      // Query to get the total number of customers
+      const getCustomerCountQuery = {
+        text: 'SELECT COUNT(*) FROM customer_registration',
+      };
+  
+      // Query to get the total number of approved service providers
+      const getApprovedServiceProviderCountQuery = {
+        text: 'SELECT COUNT(*) FROM approved_service_providers',
+      };
+  
+      // Query to get the total number of rejected service providers
+      const getRejectedServiceProviderCountQuery = {
+        text: 'SELECT COUNT(*) FROM pending_request_sp_dealer WHERE approval_status = $1 AND is_deleted = $2 ',
+        values: [false,true]
+      };
+      // Query to get the total number of vehicles on Portal
+      const getAllVehiclesCountQuery = {
+        text: 'SELECT COUNT(*) FROM customer_vehicle_data',
+      };
+
+       // Query to get the total number of Active service providers
+         const getActiveServiceProviderCountQuery = {
+          text: 'SELECT COUNT(*) FROM approved_service_providers WHERE sp_status = $1',
+          values: ['active']
+        };
+
+        // Query to get the total number of Inactive service providers
+           const getInactiveServiceProviderCountQuery = {
+            text: 'SELECT COUNT(*) FROM approved_service_providers WHERE sp_status = $1',
+            values: ['inactive']
+          };
+
+           // Query to get the total number of Pending service providers
+           const getPeningServiceProviderCountQuery = {
+            text: 'SELECT COUNT(*) FROM pending_request_sp_dealer WHERE is_deleted = $1',
+            values: [false]
+          };
+  
+      // Execute queries asynchronously
+      const customerCountPromise = client.query(getCustomerCountQuery);
+      const approvedServiceProviderCountPromise = client.query(getApprovedServiceProviderCountQuery);
+      const rejectedServiceProviderCountPromise = client.query(getRejectedServiceProviderCountQuery);
+      const getAllVehiclesCountPromise = client.query(getAllVehiclesCountQuery);
+      const getActiveServiceProviderCountPromise = client.query(getActiveServiceProviderCountQuery);
+      const getInactiveServiceProviderCountPromise = client.query(getInactiveServiceProviderCountQuery);
+      const getPendingServiceProviderCountPromise = client.query(getPeningServiceProviderCountQuery)
+      // Wait for all promises to resolve
+      const [
+        customerCountResult,
+        approvedServiceProviderCountResult,
+        rejectedServiceProviderCountResult,
+        getAllVehiclesCountResult,
+        getActiveServiceProviderCountResult,
+        getInactiveServiceProviderCountResult,
+        getPendingServiceProviderCountResult
+      ] = await Promise.all([
+        customerCountPromise,
+        approvedServiceProviderCountPromise,
+        rejectedServiceProviderCountPromise,
+        getAllVehiclesCountPromise,
+        getActiveServiceProviderCountPromise,
+        getInactiveServiceProviderCountPromise,
+        getPendingServiceProviderCountPromise
+
+      ]);
+  
+      // Extract counts from results
+      const customerCount = customerCountResult.rows[0].count;
+      const approvedServiceProviderCount = approvedServiceProviderCountResult.rows[0].count;
+      const rejectedServiceProviderCount = rejectedServiceProviderCountResult.rows[0].count;
+      const getAllVehiclesCount = getAllVehiclesCountResult.rows[0].count
+      const  getActiveServiceProviderCount = getActiveServiceProviderCountResult.rows[0].count
+      const getInactiveServiceProviderCount = getInactiveServiceProviderCountResult.rows[0].count
+      const getPendingServiceProviderCount = getPendingServiceProviderCountResult.rows[0].count
+      // Prepare response object
+      const statistics = {
+        customerCount,
+        approvedServiceProviderCount,
+        rejectedServiceProviderCount,
+        getAllVehiclesCount,
+        getActiveServiceProviderCount,
+        getInactiveServiceProviderCount,
+        getPendingServiceProviderCount
+      };
+  
+      // Send response
+      return callback(false, statistics);
+    } catch (error) {
+      console.error("Error:", error);
+      return callback(true, "Unable to fetch statistics");
+    }
+  },
+  
+  
+
 };

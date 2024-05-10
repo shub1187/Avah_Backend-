@@ -20,7 +20,8 @@ const {
     getAllPendingApprovedAppointment,
     getAllRejectedCancelledAppointment,
     estimateApprovalFromCustomer,
-    estimateRejectedByCustomer
+    estimateRejectedByCustomer,
+    reset_password
    
 } = require("../models/customer.models.js")
 
@@ -33,7 +34,7 @@ module.exports = {
     register: (req, res) => {
         register(req, (err, results) => {
             if (err)
-                res.status(500).send({
+                res.status(200).send({
                     error: true,
                     message: results || "Something Went wrong. Please try again later",
                 });
@@ -50,7 +51,7 @@ module.exports = {
      login: (req, res) => {
         login(req, (err, results) => {
             if (err)
-                res.status(500).send({
+                res.status(404).send({
                     error: true,
                     message: results || "Something Went wrong. Please try again later",
                 });
@@ -91,6 +92,24 @@ module.exports = {
                     error: false,
                     // result : results,
                     message: `${results.name} your profile has been updated successfully`,
+                });
+            }
+        });
+    },
+
+    // Reset Password  of customer After Registeration when he forgets it
+    reset_password: (req, res) => {
+        reset_password(req, (err, results) => {
+            if (err)
+                res.status(500).send({
+                    error: true,
+                    message: results || "Something Went wrong. Please try again later",
+                });
+            else {     
+                res.send({
+                    error: false,
+                    // result : results,
+                    message: `${results.name} your password has been updated successfully`,
                 });
             }
         });
@@ -143,7 +162,7 @@ module.exports = {
                 else {     
                     res.send({
                         error: false,
-                        results : results,
+                        data : results,
                         // message: `${results.name} your profile has been updated successfully`,
                     });
 
@@ -338,7 +357,8 @@ module.exports = {
                 else
                     res.send({
                         error: false,
-                        results : results
+                        data : results,
+                        message : 'Data fetched successfully',
                     });
             });
         },
@@ -352,8 +372,8 @@ module.exports = {
                 else
                     res.send({
                         error: false,
-                        results : results,
-                        message : 'This is dummy test message',
+                        data : results,
+                        message : 'Data fetched successfully',
                         status_code : 200
                     });
             });

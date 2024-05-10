@@ -4,7 +4,7 @@ module.exports = {
   checkToken: (req, res, next) => {
     // console.log("This is ln 6 from middleware",req)
     let token = req.get("authorization");
-    console.log("This is ln 6 from middleware",token)
+    // console.log("This is ln 6 from middleware",token)
     if (token) {
       token = token.slice(7);
       verify(token, "avah100token", (err, decode) => {

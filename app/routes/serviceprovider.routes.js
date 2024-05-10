@@ -60,13 +60,15 @@ const {
     recievePayment,
     getAllPaidInvoices,
     getAllVehicleList,
-    getSpecificVehicleDetailsForSpAppt
+    getSpecificVehicleDetailsForSpAppt,
+    reset_password
 } = require("../controllers/serviceproviders.controllers.js");
 const router = require("express").Router();
 const { checkToken } = require("../middlewares/auth_validation");
 
 //common
 router.post("/login", login);
+router.post("/resetPassword",reset_password)
 
 //user
 

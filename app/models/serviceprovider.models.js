@@ -59,8 +59,11 @@ module.exports = {
       const data = await new Promise((resolve) => {
         client.query(query, values, (err, result) => {
           if (err) {
-            console.error('Error registering user:', err);
-            return callback(true, 'Service Provider Registration failed');
+            if(err.code == 23505){
+                return callback(true, 'Email id already exists in system use a different to register yourself as service provider');
+            }else {
+            return callback(true, 'Service provider Registration failed');
+            }
           }
           console.log('Service Provider registered successfully!');
           return callback(false, result.rows);
@@ -98,6 +101,37 @@ module.exports = {
     } catch (e) {
       console.log("ln 59", e.message)
       callback(true, e);
+    }
+  },
+
+  // Reset Password -- Forgot password 
+  reset_password: async (req, callback) => { // As per new inputs
+    try {
+      var body = req.body;
+    
+      // Define the SQL query to update the profile
+      const query = 'UPDATE approved_service_providers SET password = $1 WHERE email = $2 RETURNING name, email';
+      
+      const values = [body.password, body.email];
+      
+      const data = await new Promise((resolve) => {
+        client.query(query, values, (err, result) => {
+          if (err) {
+            return callback(true, 'Failed to reset password.');
+          } else {
+            if (result.rows.length > 0) {
+              console.log(result.rows[0])
+              // Password Updated successfully
+              return callback(false, result.rows[0]);
+            } else {
+              // No matching email found
+              return callback(true, 'Email not found');
+            }
+          }
+        });
+      });
+    } catch (error) {
+      return callback(true, error.message);
     }
   },
 

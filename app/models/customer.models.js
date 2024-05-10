@@ -226,7 +226,10 @@ module.exports = {
                   return callback(true, 'No vehicles found for the customer');
                 } else {
                   console.log("ln 200", result.rows);
-                  return callback(false, result.rows);
+                  const results = {
+                    results: result.rows
+                  };
+                  return callback(false,results);
                 }
               }
             });
@@ -602,7 +605,10 @@ module.exports = {
                 console.log(err);
                 return callback(true, "Unable to fetch the pending and approved appointment details");
               } else {
-                return callback(false, result.rows);
+                const results = {
+                  results: result.rows
+                };
+                return callback(false, results);
               }
             });
           });
@@ -634,7 +640,10 @@ module.exports = {
                 console.log(err);
                 return callback(true, "Unable to fetch the pending and approved appointment details");
               } else {
-                return callback(false, result.rows);
+                const results = {
+                  results: result.rows
+                };
+                return callback(false,results);
               }
             });
           });
@@ -765,6 +774,37 @@ estimateRejectedByCustomer:async (req, callback) => {
     return callback(true, error.message);
   }
 },
+
+   // Reset Password -- Forgot password 
+   reset_password: async (req, callback) => { // As per new inputs
+    try {
+      var body = req.body;
+    
+      // Define the SQL query to update the profile
+      const query = 'UPDATE customer_registration SET password = $1 WHERE email = $2 RETURNING name, email';
+      
+      const values = [body.password, body.email];
+      
+      const data = await new Promise((resolve) => {
+        client.query(query, values, (err, result) => {
+          if (err) {
+            return callback(true, 'Failed to reset password.');
+          } else {
+            if (result.rows.length > 0) {
+              console.log(result.rows[0])
+              // Password Updated successfully
+              return callback(false, result.rows[0]);
+            } else {
+              // No matching email found
+              return callback(true, 'Email not found');
+            }
+          }
+        });
+      });
+    } catch (error) {
+      return callback(true, error.message);
+    }
+  },
 
 
 

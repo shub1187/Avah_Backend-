@@ -67,7 +67,8 @@ const {
     recievePayment,
     getAllPaidInvoices,
     getAllVehicleList,
-    getSpecificVehicleDetailsForSpAppt
+    getSpecificVehicleDetailsForSpAppt,
+    reset_password
 } = require("../models/serviceprovider.models.js");
 const {
     sign
@@ -92,12 +93,30 @@ module.exports = {
         });
     },//
 
+      // Reset Password  of customer After Registeration when he forgets it
+      reset_password: (req, res) => {
+        reset_password(req, (err, results) => {
+            if (err)
+                res.status(500).send({
+                    error: true,
+                    message: results || "Something Went wrong. Please try again later",
+                });
+            else {     
+                res.send({
+                    error: false,
+                    // result : results,
+                    message: `${results.name} your password has been updated successfully`,
+                });
+            }
+        });
+    },
+
     login: (req, res) => {
         login(req, (err, results) => {
             if (err)
                 res.status(500).send({
                     error: true,
-                    message:"Something Went wrong. Please try again later",
+                    message: results || "Something Went wrong. Please try again later",
                 });
             else {
                 console.log("ln 69 sp login controller",results.rows[0] )
