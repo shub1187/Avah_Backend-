@@ -68,7 +68,8 @@ const {
     getAllPaidInvoices,
     getAllVehicleList,
     getSpecificVehicleDetailsForSpAppt,
-    reset_password
+    reset_password,
+    getStatistics
 } = require("../models/serviceprovider.models.js");
 const {
     sign
@@ -84,7 +85,7 @@ module.exports = {
                     message: results || "Something Went wrong. Please try again later",
                 });
             else {
-                console.log("sp controller ln 52",results)
+                // console.log("sp controller ln 52",results)
                 res.send({
                     error: false,
                     message: "Registeration successfull"
@@ -119,7 +120,7 @@ module.exports = {
                     message: results || "Something Went wrong. Please try again later",
                 });
             else {
-                console.log("ln 69 sp login controller",results.rows[0] )
+                // console.log("ln 69 sp login controller",results.rows[0] )
                 const toCreateToken = {
                     id: results.id,
                     role: "admin",
@@ -335,7 +336,7 @@ module.exports = {
                     message: results || "Something Went wrong. Please try again later",
                 });
             else
-            console.log(" ln 338", results)
+            // console.log(" ln 338", results)
                 res.send({
                     error: false,
                     message: "success",
@@ -819,7 +820,7 @@ module.exports = {
                         message: results || "Something Went wrong. Please try again later",
                     });
                 else {
-                    console.log("LN 827 SP  controller",results)
+                    // console.log("LN 827 SP  controller",results)
                     res.send({
                         error: false,
                         message: `Estimate created successfully`,
@@ -837,7 +838,7 @@ module.exports = {
                         message: results || "Something Went wrong. Please try again later",
                     });
                 else {
-                    console.log("LN 827 SP  controller",results)
+                    // console.log("LN 827 SP  controller",results)
                     res.send({
                         error: false,
                         message: 'Estimate details retrieved successfully',
@@ -873,7 +874,7 @@ module.exports = {
                         message: results || "Something Went wrong. Please try again later",
                     });
                 else {
-                    console.log("LN 865 SP  controller",results)
+                    // console.log("LN 865 SP  controller",results)
                     res.send({
                         error: false,
                         message: `List of Penidng Estimate vehicles fetched successfully`,
@@ -891,7 +892,7 @@ module.exports = {
                         message: results || "Something Went wrong. Please try again later",
                     });
                 else {
-                    console.log("LN 903 SP  controller",results)
+                    // console.log("LN 903 SP  controller",results)
                     res.send({
                         error: false,
                         message: `List of Autofill labour fetched successfully`,
@@ -909,7 +910,7 @@ module.exports = {
                         message: results || "Something Went wrong. Please try again later",
                     });
                 else {
-                    console.log("LN 903 SP  controller",results)
+                    // console.log("LN 903 SP  controller",results)
                     res.send({
                         error: false,
                         message: `List of Autofill Spares fetched successfully`,
@@ -927,7 +928,7 @@ module.exports = {
                         message: results || "Something Went wrong. Please try again later",
                     });
                 else {
-                    console.log("LN 942 SP  controller",results)
+                    // console.log("LN 942 SP  controller",results)
                     res.send({
                         error: false,
                         message: `Spares details fetched successfully`,
@@ -945,7 +946,7 @@ module.exports = {
                         message: results || "Something Went wrong. Please try again later",
                     });
                 else {
-                    console.log("LN 903 SP  controller",results)
+                    // console.log("LN 903 SP  controller",results)
                     res.send({
                         error: false,
                         message: `Labour details fetched successfully`,
@@ -964,7 +965,7 @@ module.exports = {
                         message: results || "Something Went wrong. Please try again later",
                     });
                 else {
-                    console.log("LN 980 SP  controller",results)
+                    // console.log("LN 980 SP  controller",results)
                     res.send({
                         error: false,
                         message: `Vehicle details fetched successfully`,
@@ -982,7 +983,7 @@ module.exports = {
                         message: results || "Something Went wrong. Please try again later",
                     });
                 else {
-                    console.log("LN 999 SP  controller",results)
+                    // console.log("LN 999 SP  controller",results)
                     res.send({
                         error: false,
                         message: `Vehicle details fetched successfully`,
@@ -1000,7 +1001,7 @@ module.exports = {
                         message: results || "Something Went wrong. Please try again later",
                     });
                 else {
-                    console.log("LN 1019 SP  controller",results)
+                    // console.log("LN 1019 SP  controller",results)
                     res.send({
                         error: false,
                         message: `New Employee role that is ${results[0].role_name} added to the system successfully`,
@@ -1018,7 +1019,7 @@ module.exports = {
                         message: results || "Something Went wrong. Please try again later",
                     });
                 else {
-                    console.log("LN 1038 SP  controller",results)
+                    // console.log("LN 1038 SP  controller",results)
                     res.send({
                         error: false,
                         message: `Employee roles fetched successfully`,
@@ -1036,7 +1037,7 @@ module.exports = {
                         message: results || "Something Went wrong. Please try again later",
                     });
                 else {
-                    console.log("LN 1038 SP  controller",results)
+                    // console.log("LN 1038 SP  controller",results)
                     res.send({
                         error: false,
                         message: `Permissions per  role fetched successfully`,
@@ -1054,7 +1055,7 @@ module.exports = {
                         message: results || "Something Went wrong. Please try again later",
                     });
                 else {
-                    console.log("LN 1078 SP  controller",results)
+                    // console.log("LN 1078 SP  controller",results)
                     res.send({
                         error: false,
                         message: `Number of Notifications fetched successfully`,
@@ -1106,7 +1107,7 @@ module.exports = {
                         message: results || "Something Went wrong. Please try again later",
                     });
                 else {
-                    console.log("Ln 1133 SP  controller",results)
+                    // console.log("Ln 1133 SP  controller",results)
                     res.send({
                         error: false,
                         message: `Jobcard List fetched successfully`,
@@ -1124,7 +1125,7 @@ module.exports = {
                         message: results || "Something Went wrong. Please try again later",
                     });
                 else {
-                    console.log("Ln 1152 SP  controller",results)
+                    // console.log("Ln 1152 SP  controller",results)
                     res.send({
                         error: false,
                         message: `Jobcard details fetched successfully`,
@@ -1294,6 +1295,21 @@ module.exports = {
                         data: results
                     });
                 }
+            });
+        },
+
+        getStatistics: (req, res) => {
+            getStatistics(req, (err, results) => {
+                if (err)
+                    res.status(500).send({
+                        error: true,
+                        message: results || "Something Went wrong. Please try again later",
+                    });
+                else
+                    res.send({
+                        error: false,
+                        data: results,
+                    });
             });
         },
 

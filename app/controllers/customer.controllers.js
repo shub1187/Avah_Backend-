@@ -21,7 +21,10 @@ const {
     getAllRejectedCancelledAppointment,
     estimateApprovalFromCustomer,
     estimateRejectedByCustomer,
-    reset_password
+    reset_password,
+    getStatistics,
+    getRandomSp,
+    getGeneralStatistics
    
 } = require("../models/customer.models.js")
 
@@ -97,6 +100,56 @@ module.exports = {
         });
     },
 
+    // Get stats for dashboard
+    getStatistics: (req, res) => {
+        getStatistics(req, (err, results) => {
+            if (err)
+                res.status(500).send({
+                    error: true,
+                    message: results || "Something Went wrong. Please try again later",
+                });
+            else {     
+                res.send({
+                    error: false,
+                    result : results
+                });
+            }
+        });
+    },
+
+       // Get stats for dashboard
+       getGeneralStatistics: (req, res) => {
+        getGeneralStatistics(req, (err, results) => {
+            if (err)
+                res.status(500).send({
+                    error: true,
+                    message: results || "Something Went wrong. Please try again later",
+                });
+            else {     
+                res.send({
+                    error: false,
+                    result : results
+                });
+            }
+        });
+    },
+
+    getRandomSp: (req, res) => {
+        getRandomSp(req, (err, results) => {
+            if (err)
+                res.status(500).send({
+                    error: true,
+                    message: results || "Something Went wrong. Please try again later",
+                });
+            else {     
+                res.send({
+                    error: false,
+                    result : results
+                });
+            }
+        });
+    },
+
     // Reset Password  of customer After Registeration when he forgets it
     reset_password: (req, res) => {
         reset_password(req, (err, results) => {
@@ -162,14 +215,8 @@ module.exports = {
                 else {     
                     res.send({
                         error: false,
-                        data : results,
-                        // message: `${results.name} your profile has been updated successfully`,
+                        data : results
                     });
-
-                    // res.send({
-                    //     error: false,
-                    //     data : results
-                    // });
                 }
             });
         },

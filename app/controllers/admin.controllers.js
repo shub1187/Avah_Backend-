@@ -60,16 +60,14 @@ const {
   updateServiceCategoryDetail,
   deleteServiceCategory,
   getServiceCategorySearch,
- 
-  
-
   getAllCustomers,
   getAllRejectedSp,
   getAllApprovedSp,
   reset_password,
   getAllBrandsAutoFill,
   getAllFuelTypeAutoFill,
-  getStatistics
+  getStatistics,
+  getRandomSp
 } = require("../models/admin.models.js");
 const {
   sign
@@ -92,11 +90,12 @@ module.exports = {
           // expiresIn: "1h"
         });
         // console.log("This the avah token",jsontoken)
-        console.log("ln 85", results)
+        // console.log("ln 85", results)
         res.send({
           error: false,
-          message: `${results[0].name} you have logged in successfully`,
+          message: `${results[0]?.name} you have logged in successfully`,
           data: results,
+          profile_name : results[0]?.name,
           token: jsontoken,
         });
       }
@@ -116,6 +115,22 @@ module.exports = {
           error: false,
           message: "success",
           data: results,     
+        });
+      }
+    });
+  },
+
+  getRandomSp: (req, res) => {
+    getRandomSp(req, (err, results) => {
+      if (err)
+        res.status(500).send({
+          error: true,
+          message: results || "Something Went wrong. Please try again later",
+        });
+      else {
+        res.send({
+          error: false,
+          data: results     
         });
       }
     });

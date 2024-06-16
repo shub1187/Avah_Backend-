@@ -20,7 +20,12 @@ const {register,
     estimateApprovalFromCustomer,
     estimateRejectedByCustomer,
     profile_completion_with_image,
-    reset_password} 
+    reset_password,
+    getStatistics,
+    getRandomSp,
+    getGeneralStatistics
+
+} 
     = require("../controllers/customer.controllers.js");
 const router = require("express").Router();
 const { checkToken } = require("../middlewares/auth_validation");
@@ -29,7 +34,7 @@ const { checkToken } = require("../middlewares/auth_validation");
 
 router.post("/registerCustomer",register) // Token not required for first time sign up
 router.post("/login",login) // Token not required for first time sign up
-
+router.get("/getGeneralStatistics",getGeneralStatistics)
 router.post("/profileCompletion",checkToken,profile_completion) // Token required as functionality is up post login
 router.post("/vehicleRegistration",checkToken,vehicleRegistration) // Token required as functionality is up post login
 router.get("/vehicleSearch",checkToken,vehicle_search) 
@@ -47,10 +52,11 @@ router.get("/getAllPendingApprovedAppointment",checkToken,getAllPendingApprovedA
 router.get("/getAllRejectedCancelledAppointment",checkToken,getAllRejectedCancelledAppointment) 
 router.post("/profileCompletionWithImage",checkToken,profile_completion_with_image) // Token required as functionality is up post login
 router.post("/resetPassword",reset_password)
-
+router.get("/getStatistics",checkToken,getStatistics)
 
 router.post("/createAppointment", checkToken, createAppointment);
 router.post("/cancelAppointment", checkToken, cancelAppointment);
+router.get("/getRandomSp",getRandomSp)
 
 //Estimate 
 router.post("/estimateApproval", checkToken, estimateApprovalFromCustomer);

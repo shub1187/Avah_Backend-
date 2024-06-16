@@ -177,67 +177,129 @@ module.exports = {
         }
       },
 
-      get_customer_vehicles: async (req, callback) => { // This is for showing data inside table.
+      // get_customer_vehicles: async (req, callback) => { // This is for showing data inside table.
+      //   try {
+      //     // console.log("ln 181", req.query)
+      //     const { customer_id, q, _page, _limit } = req.query;
+      //     // console.log("ln 176:", customer_id, _page, _limit, q);
+      
+      //     // Calculate the OFFSET based on the _page and _limit parameters
+      //     const offset = (_page - 1) * _limit;
+      
+      //     // Construct a SQL query with pagination
+      //     let queryText = `
+      //       SELECT vehicle_number, vehicle_type, brand, model, customization, fuel_type 
+      //       FROM customer_vehicle_data 
+      //       WHERE customer_id = $1
+      //     `;
+      
+      //     const queryParams = [customer_id];
+      
+      //     if (q) { // This is for search functionality
+      //       queryText += `
+      //         AND (vehicle_number ILIKE $${queryParams.length + 1}
+      //           OR vehicle_type ILIKE $${queryParams.length + 2}
+      //           OR brand ILIKE $${queryParams.length + 3}
+      //           OR model ILIKE $${queryParams.length + 4}
+      //           OR customization ILIKE $${queryParams.length + 5}
+      //           OR fuel_type ILIKE $${queryParams.length + 6})
+      //       `;
+      //       for (let i = 0; i < 6; i++) {
+      //         queryParams.push(`%${q}%`);
+      //       }
+      //     }
+      
+      //     queryText += ' LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
+      //     queryParams.push(_limit, offset);
+      
+      //     const getall_customer_vehicles = {
+      //       text: queryText,
+      //       values: queryParams,
+      //     };
+      
+      //     const data = await new Promise((resolve) => {
+      //       client.query(getall_customer_vehicles, (err, result) => {
+      //         if (err) {
+      //           return callback(true, 'Error retrieving customer vehicles');
+      //         } else {
+      //           if (result.rows.length === 0) {
+      //             return callback(true, 'No vehicles found for the customer');
+      //           } else {
+      //             console.log("ln 200", result.rows);
+      //             const results = {
+      //               results: result.rows
+      //             };
+      //             return callback(false,results);
+      //           }
+      //         }
+      //       });
+      //     });
+      //   } catch (error) {
+      //     return callback(true, error.message);
+      //   }
+      // },
+
+
+      get_customer_vehicles: async (req, callback) => {
         try {
-          // console.log("ln 181", req.query)
-          const { customer_id, q, _page, _limit } = req.query;
-          // console.log("ln 176:", customer_id, _page, _limit, q);
-      
-          // Calculate the OFFSET based on the _page and _limit parameters
-          const offset = (_page - 1) * _limit;
-      
-          // Construct a SQL query with pagination
-          let queryText = `
-            SELECT vehicle_number, vehicle_type, brand, model, customization, fuel_type 
-            FROM customer_vehicle_data 
-            WHERE customer_id = $1
-          `;
-      
-          const queryParams = [customer_id];
-      
-          if (q) { // This is for search functionality
-            queryText += `
-              AND (vehicle_number ILIKE $${queryParams.length + 1}
-                OR vehicle_type ILIKE $${queryParams.length + 2}
-                OR brand ILIKE $${queryParams.length + 3}
-                OR model ILIKE $${queryParams.length + 4}
-                OR customization ILIKE $${queryParams.length + 5}
-                OR fuel_type ILIKE $${queryParams.length + 6})
+            const { customer_id, q, _page, _limit } = req.query;
+    
+            // Calculate the OFFSET based on the _page and _limit parameters
+            const offset = (_page - 1) * _limit;
+    
+            // Construct a SQL query without LIMIT and OFFSET
+            let queryText = `
+                SELECT vehicle_number, vehicle_type, brand, model, customization, fuel_type 
+                FROM customer_vehicle_data 
+                WHERE customer_id = $1
             `;
-            for (let i = 0; i < 6; i++) {
-              queryParams.push(`%${q}%`);
-            }
-          }
-      
-          queryText += ' LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
-          queryParams.push(_limit, offset);
-      
-          const getall_customer_vehicles = {
-            text: queryText,
-            values: queryParams,
-          };
-      
-          const data = await new Promise((resolve) => {
-            client.query(getall_customer_vehicles, (err, result) => {
-              if (err) {
-                return callback(true, 'Error retrieving customer vehicles');
-              } else {
-                if (result.rows.length === 0) {
-                  return callback(true, 'No vehicles found for the customer');
-                } else {
-                  console.log("ln 200", result.rows);
-                  const results = {
-                    results: result.rows
-                  };
-                  return callback(false,results);
+    
+            const queryParams = [customer_id];
+    
+            if (q) { // This is for search functionality
+                queryText += `
+                    AND (vehicle_number ILIKE $${queryParams.length + 1}
+                    OR vehicle_type ILIKE $${queryParams.length + 2}
+                    OR brand ILIKE $${queryParams.length + 3}
+                    OR model ILIKE $${queryParams.length + 4}
+                    OR customization ILIKE $${queryParams.length + 5}
+                    OR fuel_type ILIKE $${queryParams.length + 6})
+                `;
+                for (let i = 0; i < 6; i++) {
+                    queryParams.push(`%${q}%`);
                 }
-              }
+            }
+    
+            // Add ORDER BY clause
+            queryText += ' ORDER BY vehicle_id DESC';
+    
+            // Add LIMIT and OFFSET
+            queryText += ' LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
+            queryParams.push(_limit, offset);
+    
+            const getall_customer_vehicles = {
+                text: queryText,
+                values: queryParams,
+            };
+    
+            const data = await new Promise((resolve) => {
+                client.query(getall_customer_vehicles, (err, result) => {
+                    if (err) {
+                        return callback(true, 'Error retrieving customer vehicles');
+                    } else {
+                            const results = {
+                                results: result.rows
+                            };
+                            return callback(false, results);
+                    }
+                });
             });
-          });
         } catch (error) {
-          return callback(true, error.message);
+            return callback(true, error.message);
         }
-      },
+    },
+    
+    
 
 
       get_customer_vehicle_numbers: async (req, callback) => { // This is for showing data inside table.
@@ -581,76 +643,140 @@ module.exports = {
         }
       },
 
+      // getAllPendingApprovedAppointment: async (req, callback) => {
+      //   try {
+      //     console.log("Entered 1573 pending Appointment")
+      //     const { customer_id, q, _page, _limit } = req.query;
+      //     // let queryText = 'SELECT appointment_id,customer_id,sp_id,vehicle_number,vehicle_type,brand,model,fuel_type,pickup_drop,pickup_address,appointment_time,appointment_status,jobcard_status,customization,estimate_status,appointment_date,sp_name,sp_address,sp_email,sp_contact,sp_rejection_note,cust_cancellation_note,sp_cancellation_note,estimate_number FROM appointment_details WHERE customer_id = $1 AND (appointment_status = $2 OR appointment_status = $3) AND estimate_status <> $4';
+      //     let queryText = 'SELECT * FROM appointment_details WHERE customer_id = $1 AND (appointment_status = $2 OR appointment_status = $3) AND estimate_status <> $4 ORDER BY appointment_id DESC';
+      //     const queryParams = [customer_id, 'Approved', 'Pending', 'Rejected By Customer'];
+      
+      //     if (q) { // This is for search functionality
+      //       queryText += ' AND (vehicle_number ILIKE $5)';
+      //       queryParams.push(`%${q}%`);
+      //     }
+      
+      //     const getall_employee = {
+      //       text: queryText,
+      //       values: queryParams,
+      //     };
+      
+      //     const data = await new Promise((resolve) => {
+      //       client.query(getall_employee, (err, result) => {
+      //         if (err) {
+      //           console.log(err);
+      //           return callback(true, "Unable to fetch the pending and approved appointment details");
+      //         } else {
+      //           const results = {
+      //             results: result.rows
+      //           };
+      //           return callback(false, results);
+      //         }
+      //       });
+      //     });
+      //   } catch (e) {
+      //     return callback(true, e.message);
+      //   }
+      // },
+
       getAllPendingApprovedAppointment: async (req, callback) => {
         try {
-          console.log("Entered 1573 pending Appointment")
-          const { customer_id, q, _page, _limit } = req.query;
-          // let queryText = 'SELECT appointment_id,customer_id,sp_id,vehicle_number,vehicle_type,brand,model,fuel_type,pickup_drop,pickup_address,appointment_time,appointment_status,jobcard_status,customization,estimate_status,appointment_date,sp_name,sp_address,sp_email,sp_contact,sp_rejection_note,cust_cancellation_note,sp_cancellation_note,estimate_number FROM appointment_details WHERE customer_id = $1 AND (appointment_status = $2 OR appointment_status = $3) AND estimate_status <> $4';
-          let queryText = 'SELECT * FROM appointment_details WHERE customer_id = $1 AND (appointment_status = $2 OR appointment_status = $3) AND estimate_status <> $4 ORDER BY appointment_id DESC';
-          const queryParams = [customer_id, 'Approved', 'Pending', 'Rejected By Customer'];
-      
-          if (q) { // This is for search functionality
-            queryText += ' AND (vehicle_number ILIKE $5)';
-            queryParams.push(`%${q}%`);
-          }
-      
-          const getall_employee = {
-            text: queryText,
-            values: queryParams,
-          };
-      
-          const data = await new Promise((resolve) => {
-            client.query(getall_employee, (err, result) => {
-              if (err) {
-                console.log(err);
-                return callback(true, "Unable to fetch the pending and approved appointment details");
-              } else {
-                const results = {
-                  results: result.rows
-                };
-                return callback(false, results);
-              }
+            console.log("Entered getAllPendingApprovedAppointment");
+            const { customer_id, q, _page, _limit } = req.query;
+            let queryText = 'SELECT * FROM appointment_details WHERE customer_id = $1 AND (appointment_status = $2 OR appointment_status = $3) AND estimate_status <> $4';
+            const queryParams = [customer_id, 'Approved', 'Pending', 'Rejected By Customer'];
+    
+            // Calculate the OFFSET based on the _page and _limit parameters
+            const offset = (_page - 1) * _limit;
+    
+            if (q) { // Search functionality
+                console.log("Search keyword:", q);
+                queryText += ' AND (vehicle_number ILIKE $' + (queryParams.length + 1) + ')';
+                queryParams.push(`%${q}%`);
+            }
+    
+            // Always include ORDER BY clause
+            queryText += ' ORDER BY appointment_id DESC LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
+            queryParams.push(_limit, offset);
+    
+            const getall_employee = {
+                text: queryText,
+                values: queryParams,
+            };
+    
+            const data = await new Promise((resolve) => {
+                client.query(getall_employee, (err, result) => {
+                    if (err) {
+                        console.error("Database query error:", err);
+                        return callback(true, "Unable to fetch the pending and approved appointment details");
+                    } else {
+                        const results = {
+                            results: result.rows
+                        };
+                        console.log("Query results:", results);
+                        return callback(false, results);
+                    }
+                });
             });
-          });
         } catch (e) {
-          return callback(true, e.message);
+            console.error("Error:", e);
+            return callback(true, e.message);
         }
-      },
+    },
+    
+      // New Api 
 
       getAllRejectedCancelledAppointment: async (req, callback) => {
         try {
-          console.log("Entered 1573 pending Appointment")
-          const { customer_id, q, _page, _limit } = req.query;
-          let queryText = 'SELECT appointment_id,customer_id,sp_id,vehicle_number,vehicle_type,brand,model,fuel_type,pickup_drop,pickup_address,appointment_time,appointment_status,jobcard_status,customization,estimate_status,appointment_date,sp_name,sp_address,sp_email,sp_contact,sp_rejection_note,cust_cancellation_note,sp_cancellation_note FROM appointment_details WHERE customer_id = $1 AND (appointment_status = $2 OR appointment_status = $3 OR estimate_status = $4) ';
-          const queryParams = [customer_id, 'Rejected By SP', 'Cancelled By Customer', 'Rejected By Customer'];
-      
-          if (q) { // This is for search functionality
-            queryText += ' AND (sp_name ILIKE $4 OR vehicle_number ILIKE $4 OR vehicle_type ILIKE $4 OR appointment_status ILIKE $4)';
-            queryParams.push(`%${q}%`);
-          }
-      
-          const getall_employee = {
-            text: queryText,
-            values: queryParams,
-          };
-      
-          const data = await new Promise((resolve) => {
-            client.query(getall_employee, (err, result) => {
-              if (err) {
-                console.log(err);
-                return callback(true, "Unable to fetch the pending and approved appointment details");
-              } else {
-                const results = {
-                  results: result.rows
-                };
-                return callback(false,results);
-              }
+            console.log("Entered getAllRejectedCancelledAppointment");
+            const { customer_id, q, _page, _limit } = req.query;
+    
+            // Calculate the OFFSET based on the _page and _limit parameters
+            const offset = (_page - 1) * _limit;
+    
+            let queryText = `
+                SELECT appointment_id, customer_id, sp_id, vehicle_number, vehicle_type, brand, model, fuel_type, pickup_drop, pickup_address, 
+                appointment_time, appointment_status, jobcard_status, customization, estimate_status, appointment_date, 
+                sp_name, sp_address, sp_email, sp_contact, sp_rejection_note, cust_cancellation_note, sp_cancellation_note 
+                FROM appointment_details 
+                WHERE customer_id = $1 AND (appointment_status = $2 OR appointment_status = $3 OR estimate_status = $4)
+            `;
+    
+            const queryParams = [customer_id, 'Rejected By SP', 'Cancelled By Customer', 'Rejected By Customer'];
+    
+            if (q) { // This is for search functionality
+                queryText += ' AND (sp_name ILIKE $' + (queryParams.length + 1) + ' OR vehicle_number ILIKE $' + (queryParams.length + 1) + ' OR vehicle_type ILIKE $' + (queryParams.length + 1) + ' OR appointment_status ILIKE $' + (queryParams.length + 1) + ')';
+                queryParams.push(`%${q}%`);
+            }
+    
+            queryText += ' ORDER BY appointment_id DESC LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
+            queryParams.push(_limit, offset);
+    
+            const getall_employee = {
+                text: queryText,
+                values: queryParams,
+            };
+    
+            const data = await new Promise((resolve) => {
+                client.query(getall_employee, (err, result) => {
+                    if (err) {
+                        console.error("Database query error:", err);
+                        return callback(true, "Unable to fetch the rejected and cancelled appointment details");
+                    } else {
+                        const results = {
+                            results: result.rows
+                        };
+                        console.log("Query results:", results);
+                        return callback(false, results);
+                    }
+                });
             });
-          });
         } catch (e) {
-          return callback(true, e.message);
+            console.error("Error:", e);
+            return callback(true, e.message);
         }
-      },
+    },
+    
 
      
 
@@ -805,6 +931,178 @@ estimateRejectedByCustomer:async (req, callback) => {
       return callback(true, error.message);
     }
   },
+
+
+  getStatistics: async (req, callback) => {
+    try {
+        const { customer_id } = req.query;
+      console.log("ln 939", customer_id)
+        // Query to get the total number of customer vehicles
+        const getCustomerVehicleCountQuery = {
+            text: 'SELECT COUNT(*) FROM customer_vehicle_data WHERE customer_id = $1',
+            values: [customer_id]
+        };
+
+        // Query to get the total number of appointments made
+        const getAppointmentsCountQuery = {
+            text: 'SELECT COUNT(*) FROM appointment WHERE customer_id = $1',
+            values: [customer_id]
+        };
+
+        // Query to get the total number of services completed
+        const getServicesCompletedCountQuery = {
+            text: 'SELECT COUNT(*) FROM appointment WHERE customer_id = $1 AND payment_status = $2',
+            values: [customer_id, 'Received']
+        };
+
+        // Query to get the total number of approved appointment
+        const getApprovedAppointmentCountQuery = {
+          text: 'SELECT COUNT(*) FROM appointment WHERE customer_id = $1 AND appointment_status = $2',
+          values: [customer_id, 'Approved']
+      };
+
+       // Query to get the total number of pending appointment
+       const getPendingAppointmentCountQuery = {
+        text: 'SELECT COUNT(*) FROM appointment WHERE customer_id = $1 AND appointment_status = $2',
+        values: [customer_id, 'Pending']
+    };
+
+     // Query to get the total number of pending appointment
+     const getRejectedCancelledAppointmentCountQuery = {
+      text: 'SELECT COUNT(*) FROM appointment WHERE customer_id = $1 AND (appointment_status <> $2 AND appointment_status <> $3)',
+      values: [customer_id, 'Pending', 'Approved']
+  };
+
+        // Execute queries asynchronously
+        const [
+            customerVehicleCountResult,
+            appointmentsCountResult,
+            servicesCompletedCountResult,
+            ApprovedAppointmentCountResult,
+            PendingAppointmentCountResult,
+            RejectedCancelledAppointmentCountResult
+        ] = await Promise.all([
+            client.query(getCustomerVehicleCountQuery),
+            client.query(getAppointmentsCountQuery),
+            client.query(getServicesCompletedCountQuery),
+            client.query(getApprovedAppointmentCountQuery),
+            client.query(getPendingAppointmentCountQuery),
+            client.query(getRejectedCancelledAppointmentCountQuery)
+        ]);
+
+        // Extract counts from results
+        const customerVehicleCount = customerVehicleCountResult.rows[0].count;
+        const appointmentsCount = appointmentsCountResult.rows[0].count;
+        const servicesCompletedCount = servicesCompletedCountResult.rows[0].count;
+        const appointmentApprovedCount = ApprovedAppointmentCountResult.rows[0].count;
+        const appointmentPendingCount = PendingAppointmentCountResult.rows[0].count;
+        const  rejectedCancelledAppointmentCount  = RejectedCancelledAppointmentCountResult.rows[0].count;
+        // Prepare response object
+        const statistics = {
+            customerVehicleCount,
+            appointmentsCount,
+            servicesCompletedCount,
+            appointmentApprovedCount,
+            appointmentPendingCount,
+            rejectedCancelledAppointmentCount
+        };
+
+        // Send response
+        return callback(false, statistics);
+    } catch (error) {
+        console.error("Error:", error);
+        return callback(true, "Unable to fetch statistics");
+    }
+},
+
+getRandomSp : async (req, callback) => {
+  try {
+    // Construct the query to fetch 4 random approved service providers
+    const queryText = `
+      SELECT business_name,email,state,city FROM approved_service_providers
+      WHERE is_deleted = $1 AND (state IS NOT NULL AND CITY IS NOT NULL)
+      ORDER BY RANDOM()
+      LIMIT 4;
+    `;
+    const queryParams = [false];
+
+    // Create the query object
+    const get_all_approved_sp = {
+      text: queryText,
+      values: queryParams,
+    };
+
+    // Execute the query
+    const data = await new Promise((resolve, reject) => {
+      client.query(get_all_approved_sp, (err, result) => {
+        if (err) {
+          console.log(err);
+          return callback(true, "Unable to fetch the approved service providers details");
+        } else {
+          const results = {
+            results: result.rows,
+          };
+          return callback(false, results);
+        }
+      });
+    });
+
+  } catch (e) {
+    return callback(true, e.message);
+  }
+},
+
+getGeneralStatistics: async (req, callback) => {
+  try {
+    // Query to get the total number of customers
+    const getCustomerCountQuery = {
+      text: 'SELECT COUNT(*) FROM customer_registration',
+    };
+
+    // Query to get the total number of approved service providers
+    const getApprovedServiceProviderCountQuery = {
+      text: 'SELECT COUNT(*) FROM approved_service_providers',
+    };
+
+    // Query to get the total number of vehicles on Portal
+    const getAllVehiclesCountQuery = {
+      text: 'SELECT COUNT(*) FROM customer_vehicle_data',
+    };
+
+    // Execute queries asynchronously
+    const customerCountPromise = client.query(getCustomerCountQuery);
+    const approvedServiceProviderCountPromise = client.query(getApprovedServiceProviderCountQuery);
+    const getAllVehiclesCountPromise = client.query(getAllVehiclesCountQuery);
+    // Wait for all promises to resolve
+    const [
+      customerCountResult,
+      approvedServiceProviderCountResult,
+      getAllVehiclesCountResult
+    ] = await Promise.all([
+      customerCountPromise,
+      approvedServiceProviderCountPromise,
+      getAllVehiclesCountPromise
+    ]);
+
+    // Extract counts from results
+    const customerCount = customerCountResult.rows[0].count;
+    const approvedServiceProviderCount = approvedServiceProviderCountResult.rows[0].count;
+    const getAllVehiclesCount = getAllVehiclesCountResult.rows[0].count
+    // Prepare response object
+    const statistics = {
+      customerCount,
+      approvedServiceProviderCount,
+      getAllVehiclesCount
+    };
+
+    // Send response
+    return callback(false, statistics);
+  } catch (error) {
+    console.error("Error:", error);
+    return callback(true, "Unable to fetch statistics");
+  }
+},
+
 
 
 

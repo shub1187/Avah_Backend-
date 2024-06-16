@@ -110,56 +110,100 @@ module.exports = {
   }, 
 
   // Api for request tab get the pending_sp_request for approval
+  // spRequest: async (req, callback) => {
+  //   try {
+  //     const page = parseInt(req.query.page, 10) || 1;
+  //     const limit = parseInt(req.query.limit, 10) || 10;
+  //     const offset = (page - 1) * limit;
+  
+  //     // console.log("ln 124", req.query.page, req.query.limit);
+  //     const getall_pending_sp_query = {
+  //       text: 'SELECT * FROM pending_request_sp_dealer WHERE is_deleted = false ORDER BY register_sp_id  DESC  LIMIT $1 OFFSET $2',
+  //       values: [limit, offset],
+  //     };
+  //     console.log("ln 430",  getall_pending_sp_query);
+  
+  //     const data = await new Promise((resolve) => {
+  //       client.query(
+  //         getall_pending_sp_query,
+  //         (err, result) => {
+  //           // console.log("ln 435", result);
+  //           if (result?.rows?.length > 0) {
+  //               const results = {
+  //                 results: result.rows
+  //             };
+  //             return callback(false, results);
+  //           } else {
+  //             return callback(true, "There are no pending request from service provider and dealer for approval");
+  //           }
+  //         }
+  //       );
+  //     });
+  //   } catch (e) {
+  //     console.log("Error:", e);
+  //     return callback(true, e.message);
+  //   }
+
+  // },
+
+  // New Api
   spRequest: async (req, callback) => {
     try {
-      const page = parseInt(req.query.page, 10) || 1;
-      const limit = parseInt(req.query.limit, 10) || 10;
-      const offset = (page - 1) * limit;
-  
-      // console.log("ln 124", req.query.page, req.query.limit);
-      const getall_pending_sp_query = {
-        text: 'SELECT * FROM pending_request_sp_dealer WHERE is_deleted = false ORDER BY register_sp_id  DESC  LIMIT $1 OFFSET $2',
-        values: [limit, offset],
-      };
-      console.log("ln 430",  getall_pending_sp_query);
-  
-      const data = await new Promise((resolve) => {
-        client.query(
-          getall_pending_sp_query,
-          (err, result) => {
-            // console.log("ln 435", result);
-            if (result?.rows?.length > 0) {
-              const row_function = async () => {
-                const countQuery = { text: 'SELECT COUNT(*) as total FROM  pending_request_sp_dealer' };
-                const countResult = await client.query(countQuery);
-                const totalRows = countResult.rows[0].total;
-                const totalPages = Math.ceil(totalRows / limit);
-  
-                const results = {
-                  results: result.rows,
-                  pagination: {
-                    currentPage: page,
-                    totalPages: totalPages,
-                    totalRows: totalRows,
-                  },
-                };
-                // console.log("ln 151 from admin model", results);
-                return callback(false, results);
-              };
-  
-              row_function();
-            } else {
-              return callback(true, "There are no pending request from service provider and dealer for approval");
-            }
-          }
-        );
-      });
-    } catch (e) {
-      console.log("Error:", e);
-      return callback(true, e.message);
-    }
+        const { _page, _limit, q } = req.query;
+        // Calculate OFFSET based on _page and limit
+        const offset = (_page - 1) * _limit;
 
-  },
+        let queryText = `
+            SELECT * 
+            FROM pending_request_sp_dealer 
+            WHERE is_deleted = false 
+        `;
+        const queryParams = [];
+
+        if (q) { // Search functionality
+            queryText += `
+                AND (name ILIKE $${queryParams.length + 1}
+                OR email ILIKE $${queryParams.length + 2}
+                OR business_name ILIKE $${queryParams.length + 3})
+            `;
+            for (let i = 0; i < 3; i++) {
+                queryParams.push(`%${q}%`);
+            }
+        }
+
+        // Always include ORDER BY clause
+        queryText += ' ORDER BY register_sp_id DESC LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
+        queryParams.push(_limit, offset);
+
+        const getall_pending_sp_query = {
+            text: queryText,
+            values: queryParams,
+        };
+        const data = await new Promise((resolve) => {
+            client.query(
+                getall_pending_sp_query,
+                (err, result) => {
+                    if (err) {
+                        console.error("Database query error:", err);
+                        return callback(true, "Unable to fetch pending requests from service providers and dealers");
+                    } else {
+                        
+                            const results = {
+                                results: result.rows           
+                        } 
+                        return callback(false, results);
+                    }
+                }
+            );
+        });
+    } catch (e) {
+        console.error("Error:", e);
+        return callback(true, e.message);
+    }
+},
+
+
+
 
 
 
@@ -184,7 +228,7 @@ module.exports = {
       var body = req.body;
       // console.log("entered createUsER")
       const {first_name, last_name,email,mobile, password}=req.body
-      console.log(body.first_name)
+      // console.log(body.first_name)
       const data = await new Promise((resolve) => {
         client.query(
           "INSERT INTO users (first_name, last_name,email,mobile, password) VALUES ($1,$2,$3,$4,$5) RETURNING * ",[first_name, last_name,email,mobile, password],
@@ -198,7 +242,7 @@ module.exports = {
         );
       });
     } catch {
-      console.log("catch block");
+      // console.log("catch block");
       callback(true, "error");
       return true;
     }
@@ -249,7 +293,7 @@ module.exports = {
         return callback(true, "Please choose other mobile number");
       }
     } catch {
-      console.log("catch block");
+      // console.log("catch block");
       callback(true, "error");
       return true;
     }
@@ -273,7 +317,7 @@ module.exports = {
         return callback(true, "Please choose other mobile number");
       }
     } catch {
-      console.log("catch block");
+      // console.log("catch block");
       callback(true, "error");
       return true;
     }
@@ -301,16 +345,16 @@ module.exports = {
           req.query.searchText +
           "%'",
           (err, sqlResult) => {
-            console.log(err);
+            // console.log(err);
             resolve(sqlResult);
           }
         );
       });
-      console.log(data);
+      // console.log(data);
       if (data) {
         numRows = data[0].numRows;
         numPages = Math.ceil(numRows / numPerPage);
-        console.log("number of pages:", numPages);
+        // console.log("number of pages:", numPages);
         const data2 = await new Promise((resolve) => {
           sql.query(
             "SELECT * FROM users WHERE is_deleted=0 AND first_name LIKE '%" +
@@ -355,7 +399,7 @@ module.exports = {
         return callback(true, "No data found");
       }
     } catch (e) {
-      console.log(e);
+      // console.log(e);
       callback(true, e);
     }
   },
@@ -378,7 +422,7 @@ module.exports = {
         return callback(true, "Please choose other mobile number");
       }
     } catch {
-      console.log("catch block");
+      // console.log("catch block");
       callback(true, "error");
       return true;
     }
@@ -402,7 +446,7 @@ module.exports = {
         return callback(true, "Please choose other mobile number");
       }
     } catch {
-      console.log("catch block");
+      // console.log("catch block");
       callback(true, "error");
       return true;
     }
@@ -414,18 +458,18 @@ module.exports = {
       const limit = parseInt(req.query.limit, 10) || 10;
       const offset = (page - 1) * limit;
   
-      console.log("ln 422", req.query.page, req.query.limit);
+      // console.log("ln 422", req.query.page, req.query.limit);
       const getall_sp_query = {
         text: 'SELECT * FROM approved_service_providers WHERE is_deleted = false ORDER BY sp_id DESC LIMIT $1 OFFSET $2',
         values: [limit, offset],
       };
-      console.log("ln 430", getall_sp_query);
+      // console.log("ln 430", getall_sp_query);
   
       const data = await new Promise((resolve) => {
         client.query(
           getall_sp_query,
           (err, result) => {
-            console.log("ln 435", result);
+            // console.log("ln 435", result);
             if (result?.rows?.length > 0) {
               const row_function = async () => {
                 const countQuery = { text: 'SELECT COUNT(*) as total FROM approved_service_providers WHERE is_deleted = false' };
@@ -441,7 +485,7 @@ module.exports = {
                     totalRows: totalRows,
                   },
                 };
-                console.log("ln 453 from admin model", results);
+                // console.log("ln 453 from admin model", results);
                 return callback(false, results);
               };
   
@@ -453,7 +497,7 @@ module.exports = {
         );
       });
     } catch (e) {
-      console.log("Error:", e);
+      // console.log("Error:", e);
       return callback(true, e.message);
     }
   },
@@ -475,7 +519,7 @@ module.exports = {
         // );
       });
     } catch {
-      console.log("catch block");
+      // console.log("catch block");
       callback(true, "error");
       return true;
     }
@@ -553,7 +597,7 @@ module.exports = {
         return callback(true, "Please choose other mobile number");
       }
     } catch {
-      console.log("catch block");
+      // console.log("catch block");
       callback(true, "error");
       return true;
     }
@@ -581,16 +625,16 @@ module.exports = {
           req.query.searchText +
           "%'",
           (err, sqlResult) => {
-            console.log(err);
+            // console.log(err);
             resolve(sqlResult);
           }
         );
       });
-      console.log(data);
+      // console.log(data);
       if (data) {
         numRows = data[0].numRows;
         numPages = Math.ceil(numRows / numPerPage);
-        console.log("number of pages:", numPages);
+        // console.log("number of pages:", numPages);
         const data2 = await new Promise((resolve) => {
           sql.query(
             "SELECT * FROM service_providers WHERE is_deleted=0 AND business_name LIKE '%" +
@@ -635,7 +679,7 @@ module.exports = {
         return callback(true, "No data found");
       }
     } catch (e) {
-      console.log(e);
+      // console.log(e);
       callback(true, e);
     }
   },
@@ -658,7 +702,7 @@ module.exports = {
         return callback(true, "Please choose other mobile number");
       }
     } catch {
-      console.log("catch block");
+      // console.log("catch block");
       callback(true, "error");
       return true;
     }
@@ -689,7 +733,7 @@ module.exports = {
 
     try {
       const { email, approval_status, sp_status } = req.body;
-      console.log("ln 828 Entered delete sp ",req.body)
+      // console.log("ln 828 Entered delete sp ",req.body)
       // Update the pending_request_sp_dealer table
       const delete_query = {
         text: 'UPDATE approved_service_providers SET sp_status = $1, approval_status = $2, is_deleted = $3 WHERE email = $4 RETURNING *',
@@ -714,33 +758,92 @@ module.exports = {
     }
   },
 
+
+  // Old Api 
+  // getAllBrands: async (req, callback) => {
+  //   try {
+  //     const getall_brands = {
+  //       text: 'SELECT * FROM brands WHERE is_deleted = false',
+  //     };
+  //     const data = await new Promise((resolve) => {
+  //       client.query(
+  //         getall_brands,
+  //         (err, result) => {
+  //          if (err){
+  //           console.log(err)
+  //           return callback(true, "Unable to fetch the brands");
+  //          }
+  //            else {
+  //             const results = {
+  //               results: result.rows
+  //             };
+  //             return callback(false, results);
+  //           }
+  //         }
+  //       );
+  //     });
+  //   } catch (e) {
+  //     console.log("Error:", e);
+  //     return callback(true, e.message);
+  //   }
+  // },
+
+  // New Api
+
   getAllBrands: async (req, callback) => {
     try {
-      const getall_brands = {
-        text: 'SELECT * FROM brands WHERE is_deleted = false',
-      };
-      const data = await new Promise((resolve) => {
-        client.query(
-          getall_brands,
-          (err, result) => {
-           if (err){
-            console.log(err)
-            return callback(true, "Unable to fetch the brands");
-           }
-             else {
-              const results = {
-                results: result.rows
-              };
-              return callback(false, results);
-            }
-          }
-        );
-      });
+        const { _page, _limit, q } = req.query;
+
+        // Calculate the OFFSET based on the _page and _limit parameters
+        const offset = (_page - 1) * _limit;
+
+        let queryText = `
+            SELECT * 
+            FROM brands 
+            WHERE is_deleted = false
+        `;
+        const queryParams = [];
+
+        if (q) { // This is for search functionality
+            queryText += `
+                AND brand_name ILIKE $1
+            `;
+            queryParams.push(`%${q}%`);
+        }
+
+        // Add ORDER BY clause
+        queryText += ' ORDER BY brand_id DESC';
+
+        // Add LIMIT and OFFSET
+        queryText += ' LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
+        queryParams.push(_limit, offset);
+
+        const getall_brands = {
+            text: queryText,
+            values: queryParams,
+        };
+
+        const data = await new Promise((resolve) => {
+            client.query(getall_brands, (err, result) => {
+                if (err) {
+                    console.error("Database query error:", err);
+                    return callback(true, "Unable to fetch the brands");
+                } else {
+                    const results = {
+                        results: result.rows
+                    };
+                    console.log("Query results:", results);
+                    return callback(false, results);
+                }
+            });
+        });
     } catch (e) {
-      console.log("Error:", e);
-      return callback(true, e.message);
+        console.error("Error:", e);
+        return callback(true, e.message);
     }
-  },
+},
+
+
 
   createBrand: async (req, callback) => {
     try {
@@ -930,39 +1033,90 @@ module.exports = {
       return true;
     }
   },
+  // Old Api 
+  // getAllModels: async (req, callback) => {
+  //   try {
+  //     const getall_models = {
+  //       text: 'SELECT * FROM models',
+  //     };
+  //     const data = await new Promise((resolve) => {
+  //       client.query(
+  //         getall_models,
+  //         (err, result) => {
+  //          if (err){
+  //           console.log(err)
+  //           return callback(true, "Unable to fetch the models");
+  //          }
+  //            else {
+  //             const results = {
+  //               results: result.rows
+  //             };
+  //             return callback(false, results);
+  //           }
+  //         }
+  //       );
+  //     });
+  //   } catch (e) {
+  //     console.log("Error:", e);
+  //     return callback(true, e.message);
+  //   }
+  // },
+
+  // New Api 
 
   getAllModels: async (req, callback) => {
     try {
-      const getall_models = {
-        text: 'SELECT * FROM models',
-      };
-      const data = await new Promise((resolve) => {
-        client.query(
-          getall_models,
-          (err, result) => {
-           if (err){
-            console.log(err)
-            return callback(true, "Unable to fetch the models");
-           }
-             else {
-              const results = {
-                results: result.rows,
-                pagination: {
-                  currentPage: 1,
-                  totalPages: 1,
-                  totalRows: "9",
+        const { _page, _limit, q } = req.query;
+
+        // Calculate the OFFSET based on the _page and _limit parameters
+        const offset = (_page - 1) * _limit;
+
+        let queryText = `
+            SELECT * 
+            FROM models
+        `;
+        const queryParams = [];
+
+        if (q) { // This is for search functionality
+            queryText += `
+                WHERE model_name ILIKE $1
+                OR brand_name ILIKE $1
+            `;
+            queryParams.push(`%${q}%`);
+        }
+
+        // Add ORDER BY clause
+        queryText += ' ORDER BY model_id DESC';
+
+        // Add LIMIT and OFFSET
+        queryText += ' LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
+        queryParams.push(_limit, offset);
+
+        const getall_models = {
+            text: queryText,
+            values: queryParams,
+        };
+
+        const data = await new Promise((resolve) => {
+            client.query(getall_models, (err, result) => {
+                if (err) {
+                    console.error("Database query error:", err);
+                    return callback(true, "Unable to fetch the models");
+                } else {
+                    const results = {
+                        results: result.rows
+                    };
+                    console.log("Query results:", results);
+                    return callback(false, results);
                 }
-              };
-              return callback(false, results);
-            }
-          }
-        );
-      });
+            });
+        });
     } catch (e) {
-      console.log("Error:", e);
-      return callback(true, e.message);
+        console.error("Error:", e);
+        return callback(true, e.message);
     }
-  },
+},
+
 
   createModel: async (req, callback) => {
     try {
@@ -1152,38 +1306,90 @@ module.exports = {
     }
   },
 
+  // Old Api 
+
+  // getAllFuelTypes: async (req, callback) => {
+  //   try {
+  //     const getall_fuel_type = {
+  //       text: 'SELECT * FROM fuels'
+  //     };
+  //     const data = await new Promise((resolve) => {
+  //       client.query(
+  //         getall_fuel_type,
+  //         (err, result) => {
+  //          if (err){
+  //           console.log(err)
+  //           return callback(true, "Unable to fetch the fuel type");
+  //          }
+  //            else {
+  //             const results = {
+  //               results: result.rows
+  //             };
+  //             return callback(false, results);
+  //           }
+  //         }
+  //       );
+  //     });
+  //   } catch (e) {
+  //     console.log("Error:", e);
+  //     return callback(true, e.message);
+  //   }
+  // },
+
+  // New Api 
+
   getAllFuelTypes: async (req, callback) => {
     try {
-      const getall_fuel_type = {
-        text: 'SELECT * FROM fuels'
-      };
-      const data = await new Promise((resolve) => {
-        client.query(
-          getall_fuel_type,
-          (err, result) => {
-           if (err){
-            console.log(err)
-            return callback(true, "Unable to fetch the fuel type");
-           }
-             else {
-              const results = {
-                results: result.rows,
-                pagination: {
-                  currentPage: 1,
-                  totalPages: 1,
-                  totalRows: "9",
-                },
-              };
-              return callback(false, results);
-            }
-          }
-        );
-      });
+        const { _page, _limit, q } = req.query;
+
+        // Calculate the OFFSET based on the _page and _limit parameters
+        const offset = (_page - 1) * _limit;
+
+        let queryText = `
+            SELECT * 
+            FROM fuels
+        `;
+        const queryParams = [];
+
+        if (q) { // This is for search functionality
+            queryText += `
+                WHERE fuel_name ILIKE $1
+            `;
+            queryParams.push(`%${q}%`);
+        }
+
+        // Add ORDER BY clause
+        queryText += ' ORDER BY fuel_id DESC';
+
+        // Add LIMIT and OFFSET
+        queryText += ' LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
+        queryParams.push(_limit, offset);
+
+        const getall_fuel_type = {
+            text: queryText,
+            values: queryParams,
+        };
+
+        const data = await new Promise((resolve) => {
+            client.query(getall_fuel_type, (err, result) => {
+                if (err) {
+                    console.error("Database query error:", err);
+                    return callback(true, "Unable to fetch the fuel type");
+                } else {
+                    const results = {
+                        results: result.rows
+                    };
+                    console.log("Query results:", results);
+                    return callback(false, results);
+                }
+            });
+        });
     } catch (e) {
-      console.log("Error:", e);
-      return callback(true, e.message);
+        console.error("Error:", e);
+        return callback(true, e.message);
     }
-  },
+},
+
 
   createFuelType: async (req, callback) => {
     try {
@@ -2134,7 +2340,6 @@ module.exports = {
   getAllCustomers: async (req, callback) => {
     try {
       const { q, _page, _limit } = req.query;
-      // console.log("ln 1289 q", q, _page, _limit);
       let queryText = 'SELECT * FROM customer_registration';
       const queryParams = [];
   
@@ -2183,7 +2388,6 @@ module.exports = {
    getAllRejectedSp: async (req, callback) => {
     try {
       const { q, _page, _limit } = req.query;
-      // console.log("ln 1289 q", q, _page, _limit);
       let queryText = 'SELECT * FROM pending_request_sp_dealer WHERE approval_status = $1 AND is_deleted = $2 ';
       const queryParams = [false,true];
   
@@ -2237,8 +2441,6 @@ module.exports = {
   getAllApprovedSp: async (req, callback) => {
     try {
       const { q, _page, _limit } = req.query;
-      console.log("ln 1289 q", q, _page, _limit);
-      // let queryText = 'SELECT * FROM pending_request_sp_dealer WHERE is_deleted = $1';
       let queryText = 'SELECT * FROM approved_service_providers WHERE is_deleted = $1'
       const queryParams = [false];
   
