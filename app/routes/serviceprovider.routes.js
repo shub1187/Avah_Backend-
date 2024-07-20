@@ -62,10 +62,13 @@ const {
     getAllVehicleList,
     getSpecificVehicleDetailsForSpAppt,
     reset_password,
-  getStatistics    
+  getStatistics,
+  getAllBrandsMultiSelect    
 } = require("../controllers/serviceproviders.controllers.js");
 const router = require("express").Router();
 const { checkToken } = require("../middlewares/auth_validation");
+const multer = require('multer');
+const upload = multer({ dest: 'uploads/' });
 
 //common
 router.post("/login", login);
@@ -79,12 +82,14 @@ router.get("/getStatistics",checkToken,getStatistics)
 
 
 // Registeration Router
-router.post("/registerServiceProvider",register)
+router.post("/registerServiceProvider", upload.single('business_document'), register);
+// router.post("/registerServiceProvider",register)
 router.post("/updateUserDetail", checkToken, updateUserDetail);
 router.post("/deleteUser", checkToken, deleteUser);
 router.get("/getUserSearch", checkToken, getUserSearch);
 router.post("/updateUserActive", checkToken, updateUserActive);
 router.post("/updateUserPassword", checkToken, updateUserPassword);
+router.get("/getAllBrandsMultiSelect",getAllBrandsMultiSelect);
 
 //employee
 router.get("/getAllEmployee", checkToken, getAllEmployee);

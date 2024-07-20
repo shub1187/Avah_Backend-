@@ -67,7 +67,10 @@ const {
   reset_password,
   getAllBrandsAutoFill,
   getAllFuelTypeAutoFill,
-  getStatistics
+  getStatistics,
+  getSpecificPendingSpDocument,
+  getSpecificApprovedSpDocument,
+  getSpecificRejectedSpDocument
 } = require("../controllers/admin.controllers.js");
 const router = require("express").Router();
 const { checkToken } = require("../middlewares/auth_validation");
@@ -79,6 +82,9 @@ router.post("/resetPassword",reset_password);
 
 //Admin stats /Dashboard
 router.get("/getStatistics", checkToken, getStatistics );
+router.get("/getSpecificPendingSpDocument",checkToken,getSpecificPendingSpDocument)
+router.get("/getSpecificApprovedSpDocument",checkToken,getSpecificApprovedSpDocument)
+router.get("/getSpecificRejectedSpDocument",checkToken,getSpecificRejectedSpDocument)
 
 //user
 router.get("/getAllUsers", checkToken, getAllUsers);

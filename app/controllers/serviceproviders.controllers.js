@@ -69,7 +69,8 @@ const {
     getAllVehicleList,
     getSpecificVehicleDetailsForSpAppt,
     reset_password,
-    getStatistics
+    getStatistics,
+    getAllBrandsMultiSelect
 } = require("../models/serviceprovider.models.js");
 const {
     sign
@@ -1300,6 +1301,21 @@ module.exports = {
 
         getStatistics: (req, res) => {
             getStatistics(req, (err, results) => {
+                if (err)
+                    res.status(500).send({
+                        error: true,
+                        message: results || "Something Went wrong. Please try again later",
+                    });
+                else
+                    res.send({
+                        error: false,
+                        data: results,
+                    });
+            });
+        },
+
+        getAllBrandsMultiSelect: (req, res) => {
+            getAllBrandsMultiSelect(req, (err, results) => {
                 if (err)
                     res.status(500).send({
                         error: true,

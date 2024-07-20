@@ -67,7 +67,10 @@ const {
   getAllBrandsAutoFill,
   getAllFuelTypeAutoFill,
   getStatistics,
-  getRandomSp
+  getRandomSp,
+  getSpecificPendingSpDocument,
+  getSpecificApprovedSpDocument,
+  getSpecificRejectedSpDocument
 } = require("../models/admin.models.js");
 const {
   sign
@@ -117,6 +120,72 @@ module.exports = {
           data: results,     
         });
       }
+    });
+  },
+
+  getSpecificPendingSpDocument: (req, res) => {
+    getSpecificPendingSpDocument(req, (err, results) => {
+      if (err)
+        res.status(500).send({
+          error: true,
+          message: results || "Something Went wrong. Please try again later",
+        });
+      else {
+        if (results && results.business_document) {
+          let pdfData = results.business_document
+          res.setHeader('Content-Type', 'application/pdf');
+          res.send(pdfData);
+        } else {
+          res.status(404).send({
+            error: true,
+            message: "Document not found",
+          });
+        }
+      }
+    });
+  },
+
+  getSpecificApprovedSpDocument: (req, res) => {
+    getSpecificApprovedSpDocument(req, (err, results) => {
+      if (err)
+        res.status(500).send({
+          error: true,
+          message: results || "Something Went wrong. Please try again later",
+        });
+        else {
+          if (results && results.business_document) {
+            let pdfData = results.business_document
+            res.setHeader('Content-Type', 'application/pdf');
+            res.send(pdfData);
+          } else {
+            res.status(404).send({
+              error: true,
+              message: "Document not found",
+            });
+          }
+        }
+    });
+  },
+
+  getSpecificRejectedSpDocument: (req, res) => {
+    getSpecificRejectedSpDocument(req, (err, results) => {
+      if (err)
+        res.status(500).send({
+          error: true,
+          message: results || "Something Went wrong. Please try again later",
+        });
+        else {
+          if (results && results.business_document) {
+            let pdfData = results.business_document
+            res.setHeader('Content-Type', 'application/pdf');
+            res.send(pdfData);
+          } else {
+            res.status(404).send({
+              error: true,
+              message: "Document not found",
+            });
+          }
+        }
     });
   },
 

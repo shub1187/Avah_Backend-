@@ -7,13 +7,16 @@ const customerRouter = require("./app/routes/customer.routes");
 const swaggerJsdoc = require("swagger-jsdoc");
 const swaggerUi = require("swagger-ui-express");
 const app = express();
-const dbEmp = require("./database/database")
+// const dbEmp = require("./database/database")
 app.use(cors());
 // parse requests of content-type - application/json
 app.use(bodyParser.json());
 
 // parse requests of content-type - application/x-www-form-urlencoded
 app.use(bodyParser.urlencoded({ extended: true }));
+
+// Import the database client to establish the connection
+const dbClient = require("./database/database"); 
 
 
 app.use("/api/admin", adminRouter);

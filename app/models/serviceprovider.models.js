@@ -1,15 +1,19 @@
-const sql = require("../config/db.config");
-const { v4: uuidv4 } = require('uuid');
-const {Client} = require('pg');
+// const sql = require("../config/db.config");
+// const { v4: uuidv4 } = require('uuid');
+const client = require('../../database/database')
+const fs = require('fs');
 
-const client =  new Client ({
-    host: "localhost",
-    port: 5432,  
-    user: "postgres",
-    password: "Ertiga@2324",
-    database: "avah"
-})
-client.connect ();
+// Old DB connection starts
+// const {Client} = require('pg');
+// const client =  new Client ({
+//     host: "localhost",
+//     port: 5432,  
+//     user: "postgres",
+//     password: "Ertiga@2324",
+//     database: "avah"
+// })
+// client.connect ();
+// Old DB connection Ends
 
 const addEstimateEntry = async (data, type, estimateNumber,sp_id,appointment_id) => {
   try {
@@ -48,33 +52,94 @@ const addJobcardEntry = async (data, type, jobcardNumber,sp_id,appointment_id) =
 module.exports = {
 
   // Pre Registeration of Service Provider / Dealer from Register page
-  register: async (req, callback) => {
-    try {
-      var body = req.body
-      // Calculate the full_address by concatenating address, city, state, and pin_code
-      const full_address = `${body.business_address} ${body.city} ${body.state} ${body.pin_code}`;
-      const query = 'INSERT INTO pending_request_sp_dealer (name, email, business_name, business_type, document, password,approval_status,role,business_contact,sp_status,business_address,state,city,pin_code,full_address,is_deleted) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,$13,$14,$15,$16) RETURNING *';
-      const values = [body.name, body.email, body.business_name, body.business_type, body.document, body.password,body.approval_status,body.role,body.business_contact,body.sp_status,body.business_address,body.state,body.city,body.pin_code,full_address,false];
+  // register: async (req, callback) => {
+  //   try {
+  //     var body = req.body
+  //     // Calculate the full_address by concatenating address, city, state, and pin_code
+  //     const full_address = `${body.business_address} ${body.city} ${body.state} ${body.pin_code}`;
+  //     const query = 'INSERT INTO pending_request_sp_dealer (name, email, business_name, business_type, document, password,approval_status,role,business_contact,sp_status,business_address,state,city,pin_code,full_address,is_deleted) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,$13,$14,$15,$16) RETURNING *';
+  //     const values = [body.name, body.email, body.business_name, body.business_type, body.document, body.password,body.approval_status,body.role,body.business_contact,body.sp_status,body.business_address,body.state,body.city,body.pin_code,full_address,false];
       
-      const data = await new Promise((resolve) => {
-        client.query(query, values, (err, result) => {
-          if (err) {
-            if(err.code == 23505){
-                return callback(true, 'Email id already exists in system use a different to register yourself as service provider');
-            }else {
-            return callback(true, 'Service provider Registration failed');
-            }
+  //     const data = await new Promise((resolve) => {
+  //       client.query(query, values, (err, result) => {
+  //         if (err) {
+  //           if(err.code == 23505){
+  //               return callback(true, 'Email id already exists in system use a different to register yourself as service provider');
+  //           }else {
+  //           return callback(true, 'Service provider Registration failed');
+  //           }
+  //         }
+  //         console.log('Service Provider registered successfully!');
+  //         return callback(false, result.rows);
+  //       });
+  //     });
+  //   } catch (error) {
+  //     console.error('Error registering user:', error);
+  //     return callback(true, error.message);
+  //   }
+  // },
+    // Pre Registeration of Service Provider / Dealer ends
+
+    // New Register Api With business_document Starts
+
+    register : async (req, callback) => {
+      try {
+        console.log("ln 87 this is sp register", req.body)
+          const body = req.body;
+          const file = req.file;
+  
+          // Calculate the full_address by concatenating address, city, state, and pin_code
+          const full_address = `${body.business_address} ${body.city} ${body.state} ${body.pin_code}`;
+
+          // Parse the serviced_brands string back to an array
+          const brandsArray = JSON.parse(body.serviced_brands);
+
+          console.log("ln 97", brandsArray)
+  
+          // Read file data
+          const fileData = file ? fs.readFileSync(file.path) : null;
+  
+          const query = `
+              INSERT INTO pending_request_sp_dealer 
+              (name, email, business_name, business_type, document, password, approval_status, role, business_contact, sp_status, business_address, state, city, pin_code, full_address, is_deleted, business_document, serviced_brands) 
+              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) 
+              RETURNING *
+          `;
+          const values = [
+              body.name, body.email, body.business_name, body.business_type, body.document, body.password, body.approval_status, 
+              body.role, body.business_contact, body.sp_status, body.business_address, body.state, body.city, body.pin_code, 
+              full_address, false, fileData, brandsArray
+          ];
+  
+          const result = await new Promise((resolve, reject) => {
+              client.query(query, values, (err, result) => {
+                  if (err) {
+                      if (err.code == 23505) {
+                          return callback(true,'Email id already exists in system use a different one to register yourself as a service provider');
+                      } else {
+                          return callback(true,'Service provider registration failed');
+                      }
+                  }
+                  console.log('Service Provider registered successfully!');
+                  return resolve(result.rows);
+              });
+          });
+  
+          // Clean up uploaded file
+          if (file) {
+              fs.unlinkSync(file.path);
           }
-          console.log('Service Provider registered successfully!');
-          return callback(false, result.rows);
-        });
-      });
-    } catch (error) {
-      console.error('Error registering user:', error);
-      return callback(true, error.message);
-    }
-  }
-  ,  // Pre Registeration of Service Provider / Dealer ends
+  
+          return callback(false, result);
+  
+      } catch (error) {
+          console.error('Error registering user:', error);
+          return callback(true, error.message);
+      }
+  },
+
+  // New Register Api With business_document ends
+
 
   login: async (req, callback) => {
     try {
@@ -255,7 +320,7 @@ getAllEmployee: async (req, callback) => {
                   const results = {
                       results: result.rows
                   };
-                  console.log("Query results:", results);
+                  // console.log("Query results:", results);
                   return callback(false, results);
               }
           });
@@ -496,7 +561,7 @@ getAllAppointment: async (req, callback) => {
                     const results = {
                         results: result.rows
                     };
-                    console.log("Query results:", results);
+                    // console.log("Query results:", results);
                     return callback(false, results);
                 }
             });
@@ -634,7 +699,7 @@ getAllAppointment: async (req, callback) => {
                     const results = {
                         results: result.rows
                     };
-                    console.log("Query results:", results);
+                    // console.log("Query results:", results);
                     return callback(false, results);
                 }
             });
@@ -733,12 +798,12 @@ getAllAppointment: async (req, callback) => {
       }
   
       // This is for pagination
-      console.log("ln 1351",_limit, offset)
+      // console.log("ln 1351",_limit, offset)
   
       // Always include ORDER BY clause
       queryText += ' ORDER BY spare_id DESC LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
       queryParams.push(_limit, offset);
-      console.log("ln 1298", queryText, queryParams);
+      // console.log("ln 1298", queryText, queryParams);
   
       const get_all_spares = {
         text: queryText,
@@ -766,24 +831,24 @@ getAllAppointment: async (req, callback) => {
   getAllLabour: async (req, callback) => {
     try {
       const { sp_id, q, _page, _limit } = req.query;
-      console.log("ln 1330 q", q,_limit,_page)
+      // console.log("ln 1330 q", q,_limit,_page)
       let queryText = 'SELECT * FROM labour  WHERE sp_id = $1 AND is_deleted = $2'; 
       const queryParams = [sp_id,false];
 
         // Calculate the OFFSET based on the _page and _limit parameters
         const offset = (_page - 1) * _limit;
-        console.log("ln 1390", offset )
+        // console.log("ln 1390", offset )
       if (q) { // This is for search functionality
         queryText += ' AND (labour_name ILIKE $3 OR hsn_sac ILIKE $3)';
         console.log(queryText, "ln 1393")
         queryParams.push(`%${q}%`);
       }
-      console.log("ln 1395", queryParams, queryText)
+      // console.log("ln 1395", queryParams, queryText)
       // This is for pagination
       queryText += '  ORDER BY labour_id DESC LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
-      console.log("ln 1399", queryParams, queryText)
+      // console.log("ln 1399", queryParams, queryText)
       queryParams.push(_limit, offset);
-      console.log("ln 1401", queryParams, queryText)
+      // console.log("ln 1401", queryParams, queryText)
       const get_all_labours = {
         text: queryText,
         values: queryParams,
@@ -810,9 +875,9 @@ getAllAppointment: async (req, callback) => {
   deleteLabour: async (req, callback) => { // As per new inputs
     try {
       var body = req.body;   
-      console.log("ln 1371", body)
+      // console.log("ln 1371", body)
       const labour_id = parseInt(body.labour_id, 10);
-      console.log("ln 1373", labour_id)
+      // console.log("ln 1373", labour_id)
       // Define the SQL query to update the profile
       const query = 'UPDATE labour SET is_deleted = $1 WHERE labour_id = $2 AND sp_id = $3 RETURNING *'; 
       const values = [true,labour_id,body.sp_id];  
@@ -839,9 +904,9 @@ getAllAppointment: async (req, callback) => {
   deleteSpare: async (req, callback) => { // As per new inputs
     try {
       var body = req.body;   
-      console.log("ln 1371", body)
+      // console.log("ln 1371", body)
       const spare_id = parseInt(body.spare_id, 10);
-      console.log("ln 1373", spare_id)
+      // console.log("ln 1373", spare_id)
       // Define the SQL query to update the profile
       const query = 'UPDATE spares SET is_deleted = $1 WHERE spare_id = $2 AND sp_id = $3 RETURNING *'; 
       const values = [true,spare_id,body.sp_id];  
@@ -1015,7 +1080,7 @@ getEstimatePendingVehcileList: async (req, callback) => { // This is for showing
 getAllLabourListForAutoFill: async (req, callback) => {
   try {
     const { sp_id, q} = req.query;
-    console.log("ln 1330 q", q)
+    // console.log("ln 1330 q", q)
     let queryText = 'SELECT * FROM labour  WHERE sp_id = $1 AND is_deleted = $2'; 
     const queryParams = [sp_id,false];
     if (q) { // This is for search functionality
@@ -1023,7 +1088,7 @@ getAllLabourListForAutoFill: async (req, callback) => {
       console.log(queryText, "ln 1393")
       queryParams.push(`%${q}%`);
     }
-    console.log("ln 1395", queryParams, queryText)
+    // console.log("ln 1395", queryParams, queryText)
     const get_all_labours = {
       text: queryText,
       values: queryParams,
@@ -1054,7 +1119,7 @@ getAllSpareListForAutoFill: async (req, callback) => {
     // console.log("ln 1669", req.body);
     // console.log("ln 1670", req.query)
     const { sp_id,q} = req.query;
-    console.log("ln 1330 q", q, sp_id)
+    // console.log("ln 1330 q", q, sp_id)
     let queryText = 'SELECT * FROM spares  WHERE sp_id = $1 AND is_deleted = $2'; 
     const queryParams = [sp_id,false];
     if (q) { // This is for search functionality
@@ -1224,7 +1289,7 @@ getAllCreatedEstimateList: async (req, callback) => {
                   const results = {
                       results: result.rows
                   };
-                  console.log("Query results:", results);
+                  // console.log("Query results:", results);
                   return callback(false, results);
               }
           });
@@ -1303,24 +1368,24 @@ addEmployeeRole:async (req, callback) => {
 getAllEmployeeRoles: async (req, callback) => {
   try {
     const { sp_id, q, _page, _limit } = req.query;
-    console.log("ln 1330 q", q,_limit,_page)
+    // console.log("ln 1330 q", q,_limit,_page)
     let queryText = 'SELECT role_id,role_name,permission_granted FROM employee_roles  WHERE sp_id = $1 AND is_deleted = $2'; 
     const queryParams = [sp_id,false];
 
       // Calculate the OFFSET based on the _page and _limit parameters
       const offset = (_page - 1) * _limit;
-      console.log("ln 1390", offset )
+      // console.log("ln 1390", offset )
     if (q) { // This is for search functionality
       queryText += ' AND (role_name ILIKE $3)';
       console.log(queryText, "ln 1393")
       queryParams.push(`%${q}%`);
     }
-    console.log("ln 1395", queryParams, queryText)
+    // console.log("ln 1395", queryParams, queryText)
     // This is for pagination
     queryText += ' ORDER BY role_id DESC LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
-    console.log("ln 1399", queryParams, queryText)
+    // console.log("ln 1399", queryParams, queryText)
     queryParams.push(_limit, offset);
-    console.log("ln 1401", queryParams, queryText)
+    // console.log("ln 1401", queryParams, queryText)
     const get_all_roles = {
       text: queryText,
       values: queryParams,
@@ -1391,7 +1456,7 @@ getAllPermissionPerRoles: async (req, callback) => {
 getNotificationNumbers: async (req, callback) => {
   try {
     const { sp_id } = req.query;
-    console.log("ln 1849", sp_id)
+    // console.log("ln 1849", sp_id)
     // const queryParamsAppointment = [sp_id,'Approved','Pending','Created'];
     const queryParamsEstimate = [sp_id,'Created'];
     const getAppointmentCount = {
@@ -1445,7 +1510,7 @@ deleteEmployeeRole: async (req, callback) => { // As per new inputs
   try {
     var body = req.body;  
     const role_id = parseInt(body.role_id, 10);
-    console.log("ln 1373", role_id)
+    // console.log("ln 1373", role_id)
     // Define the SQL query to update the profile
     const query = 'UPDATE employee_roles SET is_deleted = $1 WHERE role_id = $2 AND sp_id = $3 RETURNING *'; 
     const values = [true,role_id,body.sp_id];  
@@ -1539,7 +1604,7 @@ getAllCreatedJobcardList: async (req, callback) => {
                   const results = {
                       results: result.rows
                   };
-                  console.log("Query results:", results);
+                  // console.log("Query results:", results);
                   return callback(false, results);
               }
           });
@@ -1891,7 +1956,7 @@ updateJobcard : async (req, callback) => {
                     const results = {
                         results: result.rows
                     };
-                    console.log("Query results:", results);
+                    // console.log("Query results:", results);
                     return callback(false, results);
                 }
             });
@@ -1986,7 +2051,7 @@ updateJobcard : async (req, callback) => {
                     const results = {
                         results: result.rows
                     };
-                    console.log("Query results:", results);
+                    // console.log("Query results:", results);
                     return callback(false, results);
                 }
             });
@@ -2046,7 +2111,7 @@ updateJobcard : async (req, callback) => {
       // console.log("ln 1669", req.body);
       // console.log("ln 1670", req.query)
       const {q} = req.query;
-      console.log("ln 1330 q", q)
+      // console.log("ln 1330 q", q)
       let queryText = 'SELECT vehicle_number FROM customer_vehicle_data'; 
       const queryParams = [];
       if (q) { // This is for search functionality
@@ -2205,7 +2270,6 @@ updateJobcard : async (req, callback) => {
   getStatistics: async (req, callback) => {
     try {
         const { sp_id } = req.query;
-      console.log("ln 939", sp_id)
         // Query to get the total number of customer vehicles
         const getEmployeeCountQuery = {
             text: 'SELECT COUNT(*) FROM employee WHERE sp_id = $1 AND is_deleted = $2',
@@ -2269,7 +2333,7 @@ updateJobcard : async (req, callback) => {
             client.query(getAllPenidngAppointmentCountQuery),
             client.query(getAllRejectedAppointmentCountQuery)
         ]);
-        console.log("ln 2250", TotalBusinessResult)
+        // console.log("ln 2250", TotalBusinessResult)
         // Extract counts from results
         const employeeCount = EmployeeCountQueryResult.rows[0].count;
         const pendingInvoicesCount = PendingInvoicesResult.rows[0].count;
@@ -2296,6 +2360,33 @@ updateJobcard : async (req, callback) => {
         console.error("Error:", error);
         return callback(true, "Unable to fetch statistics");
     }
+},
+
+getAllBrandsMultiSelect: async (req, callback) => {
+  try {
+    const { sp_id,q} = req.query;
+    // console.log("ln 1330 q", q, sp_id)
+    let queryText = 'SELECT * FROM brands  WHERE  is_deleted = $1'; 
+    const queryParams = [false];
+    const get_all_brands = {
+      text: queryText,
+      values: queryParams,
+    };
+
+    const data = await new Promise((resolve) => {
+      client.query(get_all_brands, (err, result) => {
+        if (err) {
+          console.log(err);
+          return callback(true, "Unable to fetch the Brands");
+        } else {
+            const listofBrandsForAutofill = result.rows.map(item => ({ label: item.brand_name, value: item.brand_name }));
+          return callback(false, listofBrandsForAutofill);
+        }
+      });
+    });
+  } catch (e) {
+    return callback(true, e.message);
+  }
 },
 
   

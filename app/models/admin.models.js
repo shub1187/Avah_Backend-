@@ -1,16 +1,22 @@
 // const sql = require("../config/db.config");
 // const client = require("../../database/database")
 
-const {Client} = require('pg');
+const client = require('../../database/database')
 
-const client =  new Client ({
-    host: "localhost",
-    port: 5432,  
-    user: "postgres",
-    password: "Ertiga@2324",
-    database: "avah"
-})
-client.connect ();
+// Old DB connect start
+// const {Client} = require('pg');
+
+// const client =  new Client ({
+//     host: "localhost",
+//     port: 5432,  
+//     user: "postgres",
+//     password: "Ertiga@2324",
+//     database: "avah"
+// })
+// client.connect ();
+
+//Old DB connect ends
+
 // client.connect();
 module.exports = {
 
@@ -62,7 +68,7 @@ module.exports = {
 
         // Insert into approved_service_providers table
         const insertQuery = {
-            text: 'INSERT INTO approved_service_providers (name, email, business_name, business_type, document, password,approval_status,role,business_address,sp_status,business_contact,state,city,pin_code,full_address,is_deleted,permission_granted) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,$13,$14,$15,$16,$17)',
+            text: 'INSERT INTO approved_service_providers (name, email, business_name, business_type, document, password,approval_status,role,business_address,sp_status,business_contact,state,city,pin_code,full_address,is_deleted,permission_granted,business_document,serviced_brands) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,$13,$14,$15,$16,$17,$18,$19)',
             // values: [...Object.values(insertValues), false]
             values : [   insertValues.name,
               insertValues.email,
@@ -80,7 +86,9 @@ module.exports = {
               insertValues.pin_code,
               insertValues.full_address,
               false,// The value you were adding
-              ['All']
+              ['All'],
+              insertValues.business_document,
+              insertValues.serviced_brands
             ]
         };
         await client.query(insertQuery); 
@@ -104,7 +112,7 @@ module.exports = {
       }
       
     } catch (e) {
-      console.log('Error:', e.message);
+      // console.log('Error:', e.message);
       callback(true, e.message);
     }
   }, 
@@ -146,18 +154,23 @@ module.exports = {
 
   // },
 
-  // New Api
+  // Old Api starts to get pending request
   spRequest: async (req, callback) => {
     try {
         const { _page, _limit, q } = req.query;
         // Calculate OFFSET based on _page and limit
         const offset = (_page - 1) * _limit;
 
-        let queryText = `
-            SELECT * 
-            FROM pending_request_sp_dealer 
-            WHERE is_deleted = false 
-        `;
+        // Old Query
+        // let queryText = `
+        //     SELECT * 
+        //     FROM pending_request_sp_dealer 
+        //     WHERE is_deleted = false 
+        // `;
+
+          let queryText = `SELECT register_sp_id, approval_status, is_deleted, business_type, document, full_address, role, business_address, sp_status, business_contact, sp_rejection_note, state, city, pin_code, name, email, business_name
+          FROM pending_request_sp_dealer
+          WHERE is_deleted = false`;
         const queryParams = [];
 
         if (q) { // Search functionality
@@ -184,30 +197,25 @@ module.exports = {
                 getall_pending_sp_query,
                 (err, result) => {
                     if (err) {
-                        console.error("Database query error:", err);
+                        // console.error("Database query error:", err);
                         return callback(true, "Unable to fetch pending requests from service providers and dealers");
                     } else {
-                        
+                        // console.log(result.rows[0])
                             const results = {
                                 results: result.rows           
                         } 
+
                         return callback(false, results);
                     }
                 }
             );
         });
     } catch (e) {
-        console.error("Error:", e);
+        // console.error("Error:", e);
         return callback(true, e.message);
     }
 },
-
-
-
-
-
-
-  // ends 
+  // Old Api ends to get pending request
   
 
   getAllUsers: async (req, callback) => {
@@ -219,7 +227,7 @@ module.exports = {
        return callback((false), full_data);
    
     } catch (e) {
-      console.log(e.message, "ln 112")
+      // console.log(e.message, "ln 112")
     }
   },
 
@@ -798,7 +806,7 @@ module.exports = {
         const offset = (_page - 1) * _limit;
 
         let queryText = `
-            SELECT * 
+            SELECT brand_id,brand_name 
             FROM brands 
             WHERE is_deleted = false
         `;
@@ -832,7 +840,7 @@ module.exports = {
                     const results = {
                         results: result.rows
                     };
-                    console.log("Query results:", results);
+                    // console.log("Query results:", results);
                     return callback(false, results);
                 }
             });
@@ -1106,7 +1114,7 @@ module.exports = {
                     const results = {
                         results: result.rows
                     };
-                    console.log("Query results:", results);
+                    // console.log("Query results:", results);
                     return callback(false, results);
                 }
             });
@@ -1306,7 +1314,7 @@ module.exports = {
     }
   },
 
-  // Old Api 
+  // Old Api is not working for search on admin but its working fine on auto fill on customer add vehicle dialog box for fuel type
 
   // getAllFuelTypes: async (req, callback) => {
   //   try {
@@ -1336,59 +1344,115 @@ module.exports = {
   //   }
   // },
 
-  // New Api 
+  // New Api for admin page view where filter is working.
 
-  getAllFuelTypes: async (req, callback) => {
-    try {
-        const { _page, _limit, q } = req.query;
+//   getAllFuelTypes: async (req, callback) => {
+//     try {
+//         const { _page, _limit, q } = req.query;
 
-        // Calculate the OFFSET based on the _page and _limit parameters
-        const offset = (_page - 1) * _limit;
+//         // Calculate the OFFSET based on the _page and _limit parameters
+//         const offset = (_page - 1) * _limit;
 
-        let queryText = `
-            SELECT * 
-            FROM fuels
-        `;
-        const queryParams = [];
+//         let queryText = `
+//             SELECT * 
+//             FROM fuels
+//         `;
+//         const queryParams = [];
 
-        if (q) { // This is for search functionality
-            queryText += `
-                WHERE fuel_name ILIKE $1
-            `;
-            queryParams.push(`%${q}%`);
-        }
+//         if (q) { // This is for search functionality
+//             queryText += `
+//                 WHERE fuel_name ILIKE $1
+//             `;
+//             queryParams.push(`%${q}%`);
+//         }
 
-        // Add ORDER BY clause
-        queryText += ' ORDER BY fuel_id DESC';
+//         // Add ORDER BY clause
+//         queryText += ' ORDER BY fuel_id DESC';
 
-        // Add LIMIT and OFFSET
-        queryText += ' LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
-        queryParams.push(_limit, offset);
+//         // Add LIMIT and OFFSET
+//         queryText += ' LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
+//         queryParams.push(_limit, offset);
 
-        const getall_fuel_type = {
-            text: queryText,
-            values: queryParams,
-        };
+//         const getall_fuel_type = {
+//             text: queryText,
+//             values: queryParams,
+//         };
 
-        const data = await new Promise((resolve) => {
-            client.query(getall_fuel_type, (err, result) => {
-                if (err) {
-                    console.error("Database query error:", err);
-                    return callback(true, "Unable to fetch the fuel type");
-                } else {
-                    const results = {
-                        results: result.rows
-                    };
-                    console.log("Query results:", results);
-                    return callback(false, results);
-                }
-            });
-        });
-    } catch (e) {
-        console.error("Error:", e);
-        return callback(true, e.message);
-    }
+//         const data = await new Promise((resolve) => {
+//             client.query(getall_fuel_type, (err, result) => {
+//                 if (err) {
+//                     console.error("Database query error:", err);
+//                     return callback(true, "Unable to fetch the fuel type");
+//                 } else {
+//                     const results = {
+//                         results: result.rows
+//                     };
+//                     // console.log("Query results:", results);
+//                     return callback(false, results);
+//                 }
+//             });
+//         });
+//     } catch (e) {
+//         console.error("Error:", e);
+//         return callback(true, e.message);
+//     }
+// },
+
+// New Api working for both admin and customer page
+getAllFuelTypes: async (req, callback) => {
+  try {
+      // Validate and set default values for pagination
+      const _page = parseInt(req.query._page, 10) || 1;
+      const _limit = parseInt(req.query._limit, 10) || 10;
+      const q = req.query.q || '';
+
+      // Calculate the OFFSET based on the _page and _limit parameters
+      const offset = (_page - 1) * _limit;
+
+      let queryText = `
+          SELECT * 
+          FROM fuels
+      `;
+      const queryParams = [];
+
+      if (q) { // This is for search functionality
+          queryText += `
+              WHERE fuel_name ILIKE $1
+          `;
+          queryParams.push(`%${q}%`);
+      }
+
+      // Add ORDER BY clause
+      queryText += ' ORDER BY fuel_id DESC';
+
+      // Add LIMIT and OFFSET
+      queryText += ' LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
+      queryParams.push(_limit, offset);
+
+      const getall_fuel_type = {
+          text: queryText,
+          values: queryParams,
+      };
+
+      const data = await new Promise((resolve, reject) => {
+          client.query(getall_fuel_type, (err, result) => {
+              if (err) {
+                  console.error("Database query error:", err);
+                  return callback(true, "Unable to fetch the fuel type");
+              } else {
+                  const results = {
+                      results: result.rows
+                  };
+                  return callback(false, results);
+              }
+          });
+      });
+  } catch (e) {
+      console.error("Error:", e);
+      return callback(true, e.message);
+  }
 },
+
 
 
   createFuelType: async (req, callback) => {
@@ -2466,7 +2530,7 @@ module.exports = {
       // Always include ORDER BY clause
       queryText += ' ORDER BY sp_id DESC LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
       queryParams.push(_limit, (_page - 1) * _limit);
-      console.log("ln 1298", queryText, queryParams);
+      // console.log("ln 1298", queryText, queryParams);
   
       const get_all_approved_sp = {
         text: queryText,
@@ -2526,7 +2590,7 @@ module.exports = {
   getAllBrandsAutoFill: async (req, callback) => {
     try {
       const { sp_id,q} = req.query;
-      console.log("ln 1330 q", q, sp_id)
+      // console.log("ln 1330 q", q, sp_id)
       let queryText = 'SELECT * FROM brands  WHERE  is_deleted = $1'; 
       const queryParams = [false];
       const get_all_brands = {
@@ -2669,6 +2733,101 @@ module.exports = {
     } catch (error) {
       console.error("Error:", error);
       return callback(true, "Unable to fetch statistics");
+    }
+  },
+
+
+  getSpecificPendingSpDocument: async (req, callback) => {
+    try {
+      const { register_sp_id } = req.query;
+      // console.log("ln 1705");
+      let queryText =
+        'SELECT business_document FROM pending_request_sp_dealer  WHERE register_sp_id = $1';
+      const queryParams = [register_sp_id];
+      const get_document = {
+        text: queryText,
+        values: queryParams,
+      };
+  
+      const data = await new Promise((resolve) => {
+        client.query(get_document, (err, result) => {
+          // console.log("ln 2755", result)
+          if (err) {
+            console.log(err);
+            return callback(true, "Unable to fetch the document");
+          }
+          else if ( result?.rows[0]?.business_document == null){
+            return callback(true,'There is no documnet in the system against this service provider');
+          }
+          else {
+            return callback(false, result.rows[0]);
+          }
+        });
+      });
+    } catch (e) {
+      return callback(true, e.message);
+    }
+  },
+
+  getSpecificApprovedSpDocument: async (req, callback) => {
+    try {
+      const { sp_id } = req.query;
+      // console.log("ln 1705");
+      let queryText =
+        'SELECT business_document FROM approved_service_providers  WHERE sp_id = $1';
+      const queryParams = [sp_id];
+      const get_document = {
+        text: queryText,
+        values: queryParams,
+      };
+  
+      const data = await new Promise((resolve) => {
+        client.query(get_document, (err, result) => {
+          if (err) {
+            console.log(err);
+            return callback(true, "Unable to fetch the document");
+          }
+          else if ( result?.rows[0]?.business_document == null){
+            return callback(true,'There is no documnet in the system against this service provider');
+          }
+          else {
+            return callback(false, result.rows[0]);
+          }
+        });
+      });
+    } catch (e) {
+      return callback(true, e.message);
+    }
+  },
+
+  getSpecificRejectedSpDocument: async (req, callback) => {
+    try {
+      const { register_sp_id } = req.query;
+      // console.log("ln 1705");
+      let queryText =
+        'SELECT business_document FROM pending_request_sp_dealer  WHERE register_sp_id = $1';
+      const queryParams = [register_sp_id];
+      const get_document = {
+        text: queryText,
+        values: queryParams,
+      };
+  
+      const data = await new Promise((resolve) => {
+        client.query(get_document, (err, result) => {
+          if (err) {
+            console.log(err);
+            return callback(true, "Unable to fetch the document");
+          }
+          else if ( result?.rows[0]?.business_document == null){
+            return callback(true,'There is no documnet in the system against this service provider');
+          }
+          else {
+            return callback(false, result.rows[0]);
+          }
+        });
+      });
+    } catch (e) {
+      return callback(true, e.message);
     }
   },
   

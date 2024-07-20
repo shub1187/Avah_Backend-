@@ -1,13 +1,16 @@
 const {Client} = require('pg');
 const multer = require('multer');
-const client =  new Client ({
-    host: "localhost",
-    port: 5432,  
-    user: "postgres",
-    password: "Ertiga@2324",
-    database: "avah"
-})
-client.connect ();
+const client = require('../../database/database')
+// Old DB connection starts
+// const client =  new Client ({
+//     host: "localhost",
+//     port: 5432,  
+//     user: "postgres",
+//     password: "Ertiga@2324",
+//     database: "avah"
+// })
+// client.connect ();
+// Old DB connection ends
 
 module.exports = {
 
@@ -28,7 +31,7 @@ module.exports = {
                 return callback(true, 'Customer Registration failed');
                 }
               }
-              console.log('Customer registered successfully!');
+              // console.log('Customer registered successfully!');
               return callback(false, result.rows);
             });
           });
@@ -58,7 +61,7 @@ module.exports = {
               );
             });
         } catch (e) {
-          console.log("ln 59", e.message)
+          // console.log("ln 59", e.message)
           callback(true, e);
         }
       },
@@ -81,7 +84,7 @@ module.exports = {
                 return callback(true, 'Profile Updation failed');
               } else {
                 if (result.rows.length > 0) {
-                  console.log(result.rows[0])
+                  // console.log(result.rows[0])
                   // Profile updated successfully
                   return callback(false, result.rows[0]);
                 } else {
@@ -121,7 +124,7 @@ module.exports = {
               const email = result.rows[0].email;
               const full_address = result.rows[0].full_address;
               const mobile_number = result.rows[0].mobile_number;
-              console.log("ln 115 vehcileRegisteration api cust_id is : ", result.rows[0])
+              // console.log("ln 115 vehcileRegisteration api cust_id is : ", result.rows[0])
               const name = result.rows[0].name;
       
               // Now, insert vehicle details using the fetched customer_id
@@ -129,22 +132,22 @@ module.exports = {
               const vehicleValues = [customer_id, body.vehicle_number, body.vehicle_type, body.brand, body.model, body.customization, body.fuel_type, body.chassis_number,name,full_address,email,mobile_number];
               client.query(vehicleQuery, vehicleValues, (err, result) => {
                 if (err) {
-                  console.log('ln 132', err)
+                  // console.log('ln 132', err)
                   if (err.code === '23505') {
                     return callback(true, `${name}, vehicle registration failed because the vehicle with vehicle number  ${body.vehicle_number} has already been registered`);
                   } else {
-                    console.log("ln 126" , err.message)
+                    // console.log("ln 126" , err.message)
                     return callback(true, 'Vehicle registration failed');
                   }
                 }
       
-                console.log('Vehicle registered successfully!');
-                console.log("ln 132",result)
+                // console.log('Vehicle registered successfully!');
+                // console.log("ln 132",result)
                 var data = {
                   vehicle_number :  result.rows[0].vehicle_number,
                   customer_name : name
                 }
-                console.log(data)
+                // console.log(data)
                 return callback(false, data);
               });
             });
@@ -334,11 +337,11 @@ module.exports = {
 
       get_customer_profile_data: async (req, callback) => {
         try {
-          console.log("Entered ln 197: get_profile_data", req)
+          // console.log("Entered ln 197: get_profile_data", req)
           // Construct a SQL query to search for vehicles based on the partial vehicle number
           const query = 'SELECT name,email,full_address,mobile_number,profile_image FROM customer_registration  WHERE email = $1';
           const values = [req.body.email]; // Use '%' to match any characters after the entered partial number
-          console.log("ln 198",query)
+          // console.log("ln 198",query)
           let button_name = ""
           const data = await new Promise((resolve) => {
             client.query(query, values, (err, result) => {
@@ -350,10 +353,10 @@ module.exports = {
                 // console.log("Ln 204 GET customer_profile",result.rows)
                 if (result.rows[0].full_address != null && result.rows[0].mobile_number != null ){
                    button_name = "Update Profile"
-                  console.log(button_name)
+                  // console.log(button_name)
                 } else {
                   button_name = "Complete your Profile"
-                  console.log(button_name)
+                  // console.log(button_name)
                 }
                 let data = {
                   name : result.rows[0].name,
@@ -681,7 +684,7 @@ module.exports = {
 
       getAllPendingApprovedAppointment: async (req, callback) => {
         try {
-            console.log("Entered getAllPendingApprovedAppointment");
+            // console.log("Entered getAllPendingApprovedAppointment");
             const { customer_id, q, _page, _limit } = req.query;
             let queryText = 'SELECT * FROM appointment_details WHERE customer_id = $1 AND (appointment_status = $2 OR appointment_status = $3) AND estimate_status <> $4';
             const queryParams = [customer_id, 'Approved', 'Pending', 'Rejected By Customer'];
@@ -690,7 +693,7 @@ module.exports = {
             const offset = (_page - 1) * _limit;
     
             if (q) { // Search functionality
-                console.log("Search keyword:", q);
+                // console.log("Search keyword:", q);
                 queryText += ' AND (vehicle_number ILIKE $' + (queryParams.length + 1) + ')';
                 queryParams.push(`%${q}%`);
             }
@@ -713,7 +716,7 @@ module.exports = {
                         const results = {
                             results: result.rows
                         };
-                        console.log("Query results:", results);
+                        // console.log("Query results:", results);
                         return callback(false, results);
                     }
                 });
@@ -728,7 +731,7 @@ module.exports = {
 
       getAllRejectedCancelledAppointment: async (req, callback) => {
         try {
-            console.log("Entered getAllRejectedCancelledAppointment");
+            // console.log("Entered getAllRejectedCancelledAppointment");
             const { customer_id, q, _page, _limit } = req.query;
     
             // Calculate the OFFSET based on the _page and _limit parameters
@@ -766,7 +769,7 @@ module.exports = {
                         const results = {
                             results: result.rows
                         };
-                        console.log("Query results:", results);
+                        // console.log("Query results:", results);
                         return callback(false, results);
                     }
                 });
@@ -936,7 +939,6 @@ estimateRejectedByCustomer:async (req, callback) => {
   getStatistics: async (req, callback) => {
     try {
         const { customer_id } = req.query;
-      console.log("ln 939", customer_id)
         // Query to get the total number of customer vehicles
         const getCustomerVehicleCountQuery = {
             text: 'SELECT COUNT(*) FROM customer_vehicle_data WHERE customer_id = $1',
