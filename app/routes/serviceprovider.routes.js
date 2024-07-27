@@ -14,7 +14,6 @@ const {
     createEmployee,
     getEmployeeById,
     updateEmployeeDetail,
-    deleteEmployee,
     getEmployeeSearch,
     updateEmployeeActive,
     updateEmployeePassword,
@@ -63,7 +62,9 @@ const {
     getSpecificVehicleDetailsForSpAppt,
     reset_password,
   getStatistics,
-  getAllBrandsMultiSelect    
+  getAllBrandsMultiSelect,
+  updateEmployee,
+  deleteEmployee   
 } = require("../controllers/serviceproviders.controllers.js");
 const router = require("express").Router();
 const { checkToken } = require("../middlewares/auth_validation");
@@ -91,9 +92,10 @@ router.post("/updateUserActive", checkToken, updateUserActive);
 router.post("/updateUserPassword", checkToken, updateUserPassword);
 router.get("/getAllBrandsMultiSelect",getAllBrandsMultiSelect);
 
+router.post("/updateEmployee", checkToken, updateEmployee);
+
 //employee
 router.get("/getAllEmployee", checkToken, getAllEmployee);
-
 router.post("/createEmployee", checkToken, createEmployee);
 router.post("/getEmployeeById", checkToken, getEmployeeById);
 router.post("/updateEmployeeDetail", checkToken, updateEmployeeDetail);

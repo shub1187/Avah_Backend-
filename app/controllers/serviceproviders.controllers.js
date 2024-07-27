@@ -15,7 +15,6 @@ const {
     createEmployee,
     getEmployeeById,
     updateEmployeeDetail,
-    deleteEmployee,
     getEmployeeSearch,
     updateEmployeeActive,
     updateEmployeePassword,
@@ -70,7 +69,9 @@ const {
     getSpecificVehicleDetailsForSpAppt,
     reset_password,
     getStatistics,
-    getAllBrandsMultiSelect
+    getAllBrandsMultiSelect,
+    updateEmployee,
+    deleteEmployee
 } = require("../models/serviceprovider.models.js");
 const {
     sign
@@ -357,7 +358,7 @@ module.exports = {
                 res.send({
                     error: false,
                     message: "Employee added to the system successfully",
-                    data: results,
+                    // data: results,
                 });
         });
     },
@@ -1326,6 +1327,40 @@ module.exports = {
                         error: false,
                         data: results,
                     });
+            });
+        },
+
+        updateEmployee: (req, res) => {
+            updateEmployee(req, (err, results) => {
+                if (err)
+                    res.status(200).send({
+                        error: true,
+                        message: results || "Something Went wrong. Please try again later",
+                    });
+                else {
+                    res.send({
+                        error: false,
+                        message: "Employee edited successfully",
+                        // data: results
+                    });
+                }
+            });
+        },
+
+        deleteEmployee: (req, res) => {
+            deleteEmployee(req, (err, results) => {
+                if (err)
+                    res.status(200).send({
+                        error: true,
+                        message: results || "Something Went wrong. Please try again later",
+                    });
+                else {
+                    // console.log("customer controller ln 52",results)
+                    res.send({
+                        error: false,
+                        message: `Employee name ${results.name} deleted from the system successfully`
+                    });
+                }
             });
         },
 

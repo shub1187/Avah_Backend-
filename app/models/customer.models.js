@@ -482,8 +482,8 @@ module.exports = {
       
           for (const { city, state } of cityStateData) {
             const queryForServiceProviders =
-              'SELECT sp_id, business_name, business_address,business_contact FROM approved_service_providers WHERE city = $1 AND state = $2 AND sp_status <> $3';
-            const values = [city, state, 'inactive'];
+              'SELECT sp_id, business_name, business_address,business_contact,serviced_brands FROM approved_service_providers WHERE city = $1 AND state = $2 AND sp_status <> $3';
+            const values = [city, state, 'Inactive'];
       
             const serviceProviderData = await new Promise((resolve) => {
               client.query(queryForServiceProviders, values, (err, result) => {
@@ -499,7 +499,8 @@ module.exports = {
                     label: row.business_name,
                     value: row.business_name,
                     address: row.business_address,
-                    sp_mobile : row.business_contact
+                    sp_mobile : row.business_contact,
+                    brands_serviced : row.serviced_brands
                   }));
                   resolve();
                 }
@@ -816,7 +817,7 @@ const upload = multer({ storage: storage }).single('image'); // 'image' is the k
               return callback(true, 'Profile Updation failed');
             } else {
               if (result.rows.length > 0) {
-                console.log(result.rows[0])
+                // console.log(result.rows[0])
                 // Profile updated successfully
                 return callback(false, result.rows[0]);
               } else {
@@ -842,7 +843,7 @@ const upload = multer({ storage: storage }).single('image'); // 'image' is the k
 estimateApprovalFromCustomer: async (req, callback) => {
   try {
     var body = req.body;
-    console.log("ln 712", body);
+    // console.log("ln 712", body);
 
     // Now, copy data from estimate table to job card table
     const sequenceName = 'jobcard_number_seq'; // Replace with your sequence name
@@ -858,7 +859,7 @@ estimateApprovalFromCustomer: async (req, callback) => {
         console.error('Error copying data to job card table:', err);
         return callback(true, 'Failed to create job card');
       }
-      console.log('Job card created successfully!');
+      // console.log('Job card created successfully!');
 
       // Update appointment table
       const updateQuery = 'UPDATE appointment SET estimate_status = $1, has_customer_cancelled = $2, jobcard_status = $3, advisor_assigned = $4, estimate_approval_or_rejection_date = CURRENT_DATE, jobcard_number = $7, jobcard_opened_on = CURRENT_DATE  WHERE appointment_id = $5 AND estimate_number = $6 RETURNING *';
@@ -869,7 +870,7 @@ estimateApprovalFromCustomer: async (req, callback) => {
           console.error('Error in estimate approval from customer portal:', err);
           return callback(true, 'Failed to approve estimate');
         }
-        console.log('Estimate approved successfully!');
+        // console.log('Estimate approved successfully!');
         callback(false, 'Estimate approved successfully, and job card created');
       });
     });
@@ -884,7 +885,7 @@ estimateApprovalFromCustomer: async (req, callback) => {
 estimateRejectedByCustomer:async (req, callback) => { 
   try {
     var body = req.body
-    console.log("ln 712", body)
+    // console.log("ln 712", body)
     const query = 'UPDATE appointment SET estimate_status = $1,has_customer_cancelled =$2, jobcard_status = $3, advisor_assigned = $4, estimate_rejection_note = $5,estimate_approval_Or_rejection_date = CURRENT_DATE WHERE appointment_id = $6 AND estimate_number = $7 RETURNING *';
     const values = ['Rejected By Customer',true,'Cancelled','No',body.estimate_rejection_note,body.appointment_id,body.estimate_number];
     
@@ -894,7 +895,7 @@ estimateRejectedByCustomer:async (req, callback) => {
           console.error('Error in estimate  rejection from customer portal:', err);
           return callback(true, 'Failed to reject estimate');
         }
-        console.log('Estimate rejected successfully!');
+        // console.log('Estimate rejected successfully!');
         return callback(false, 'Estimate rejected successfully');
       });
     });
@@ -920,7 +921,7 @@ estimateRejectedByCustomer:async (req, callback) => {
             return callback(true, 'Failed to reset password.');
           } else {
             if (result.rows.length > 0) {
-              console.log(result.rows[0])
+              // console.log(result.rows[0])
               // Password Updated successfully
               return callback(false, result.rows[0]);
             } else {
@@ -1038,7 +1039,7 @@ getRandomSp : async (req, callback) => {
     const data = await new Promise((resolve, reject) => {
       client.query(get_all_approved_sp, (err, result) => {
         if (err) {
-          console.log(err);
+          // console.log(err);
           return callback(true, "Unable to fetch the approved service providers details");
         } else {
           const results = {

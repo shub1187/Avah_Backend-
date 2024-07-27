@@ -168,7 +168,7 @@ module.exports = {
         //     WHERE is_deleted = false 
         // `;
 
-          let queryText = `SELECT register_sp_id, approval_status, is_deleted, business_type, document, full_address, role, business_address, sp_status, business_contact, sp_rejection_note, state, city, pin_code, name, email, business_name
+          let queryText = `SELECT register_sp_id, approval_status, is_deleted, business_type, full_address, role, business_address, sp_status, business_contact, sp_rejection_note, state, city, pin_code, name, email, business_name, serviced_brands
           FROM pending_request_sp_dealer
           WHERE is_deleted = false`;
         const queryParams = [];
@@ -2409,7 +2409,6 @@ getAllFuelTypes: async (req, callback) => {
   
       // If search query is provided, modify the query to include search conditions
       if (q) {
-        console.log("inside q ln 1291", q);
         queryText += `
           WHERE name ILIKE $${queryParams.length + 1} || '%'
           OR email ILIKE $${queryParams.length + 2} || '%'
@@ -2457,7 +2456,6 @@ getAllFuelTypes: async (req, callback) => {
   
      // If search query is provided, modify the query to include search conditions
         if (q) {
-          console.log("inside q ln 1291", q);
           if (!queryText.includes('WHERE')) {
             queryText += ' WHERE ';
           } else {
@@ -2510,7 +2508,6 @@ getAllFuelTypes: async (req, callback) => {
   
      // If search query is provided, modify the query to include search conditions
         if (q) {
-          // console.log("inside q ln 1291", q);
           if (!queryText.includes('WHERE')) {
             queryText += ' WHERE ';
           } else {
@@ -2571,7 +2568,7 @@ getAllFuelTypes: async (req, callback) => {
             return callback(true, 'Failed to reset password.');
           } else {
             if (result.rows.length > 0) {
-              console.log(result.rows[0])
+              // console.log(result.rows[0])
               // Password Updated successfully
               return callback(false, result.rows[0]);
             } else {
@@ -2666,13 +2663,13 @@ getAllFuelTypes: async (req, callback) => {
        // Query to get the total number of Active service providers
          const getActiveServiceProviderCountQuery = {
           text: 'SELECT COUNT(*) FROM approved_service_providers WHERE sp_status = $1',
-          values: ['active']
+          values: ['Active']
         };
 
         // Query to get the total number of Inactive service providers
            const getInactiveServiceProviderCountQuery = {
             text: 'SELECT COUNT(*) FROM approved_service_providers WHERE sp_status = $1',
-            values: ['inactive']
+            values: ['Inactive']
           };
 
            // Query to get the total number of Pending service providers

@@ -17,14 +17,14 @@ const fs = require('fs');
 
 const addEstimateEntry = async (data, type, estimateNumber,sp_id,appointment_id) => {
   try {
-    console.log(" ln 16 sp_id", sp_id, data)
+    // console.log(" ln 16 sp_id", sp_id, data)
       const { name, hsn_sac, selling_price, tax, quantity } = data;
       const query = 'INSERT INTO estimate (estimate_number, type, name, hsn_sac, selling_price, tax, sp_id,appointment_id,quantity) VALUES ($1, $2, $3, $4, $5, $6,$7,$8,$9) RETURNING *';
       const values = [estimateNumber, type, name, hsn_sac, selling_price, tax,sp_id,appointment_id,quantity];
 
       const result = await client.query(query, values);
 
-      console.log(`${type} entry added to the system successfully!`, result.rows);
+      // console.log(`${type} entry added to the system successfully!`, result.rows);
       return result.rows; // Resolve with the inserted data
   } catch (error) {
       console.error(`Error in adding ${type} entry:`, error);
@@ -34,7 +34,7 @@ const addEstimateEntry = async (data, type, estimateNumber,sp_id,appointment_id)
 
 const addJobcardEntry = async (data, type, jobcardNumber,sp_id,appointment_id) => {
   try {
-    console.log(" ln 16 sp_id", sp_id, data)
+    // console.log(" ln 16 sp_id", sp_id, data)
       const { name, hsn_sac, selling_price, tax, quantity } = data;
       const query = 'INSERT INTO jobcard (jobcard_number, type, name, hsn_sac, selling_price, tax, sp_id,appointment_id,quantity,jobcard_last_updated) VALUES ($1, $2, $3, $4, $5, $6,$7,$8,$9,CURRENT_DATE) RETURNING *';
       const values = [jobcardNumber, type, name, hsn_sac, selling_price, tax,sp_id,appointment_id,quantity];
@@ -84,17 +84,25 @@ module.exports = {
 
     register : async (req, callback) => {
       try {
-        console.log("ln 87 this is sp register", req.body)
+        // console.log("ln 87 this is sp register", req.body)
           const body = req.body;
           const file = req.file;
   
           // Calculate the full_address by concatenating address, city, state, and pin_code
           const full_address = `${body.business_address} ${body.city} ${body.state} ${body.pin_code}`;
 
-          // Parse the serviced_brands string back to an array
-          const brandsArray = JSON.parse(body.serviced_brands);
+          // Old Logic Parse the serviced_brands string back to an array
+          // const brandsArray = JSON.parse(body.serviced_brands);
 
-          console.log("ln 97", brandsArray)
+          let brandsArray;
+          try {
+            // Parse the serviced_brands string back to an array
+            brandsArray = JSON.parse(body.serviced_brands);
+          } catch (parseError) {
+            throw new Error('Invalid JSON format for serviced_brands');
+          }
+
+          // console.log("ln 97", brandsArray)
   
           // Read file data
           const fileData = file ? fs.readFileSync(file.path) : null;
@@ -120,7 +128,7 @@ module.exports = {
                           return callback(true,'Service provider registration failed');
                       }
                   }
-                  console.log('Service Provider registered successfully!');
+                  // console.log('Service Provider registered successfully!');
                   return resolve(result.rows);
               });
           });
@@ -145,16 +153,16 @@ module.exports = {
     try {
       const login_query = {text: 'SELECT * FROM service_provider_login_creds WHERE email = $1 AND password = $2',
       values: [req.body.email, req.body.password]}
-      console.log( login_query)
+      // console.log( login_query)
         const data = await new Promise((resolve) => {
           client.query(
             login_query, 
             (err,result)=>{
               // console.log("result",result)
-            if (result.rows.length==1 && result.rows[0].status == 'active' ) {  // Login successfull for active service provider
+            if (result.rows.length==1 && result.rows[0].status == 'Active' ) {  // Login successfull for active service provider
               return callback(false, result);
             } 
-            else if(result.rows.length==1 && result.rows[0].status == 'inactive') {
+            else if(result.rows.length==1 && result.rows[0].status == 'Inactive') {
               return callback(true,"Sorry you cannot login you have been disabled by the Admin")    
             }
             else if (result.rows.length == 0) {
@@ -164,7 +172,7 @@ module.exports = {
           );
         });
     } catch (e) {
-      console.log("ln 59", e.message)
+      // console.log("ln 59", e.message)
       callback(true, e);
     }
   },
@@ -185,7 +193,7 @@ module.exports = {
             return callback(true, 'Failed to reset password.');
           } else {
             if (result.rows.length > 0) {
-              console.log(result.rows[0])
+              // console.log(result.rows[0])
               // Password Updated successfully
               return callback(false, result.rows[0]);
             } else {
@@ -203,7 +211,7 @@ module.exports = {
   // To get list of technician for creating Job Card OLD
   getAllTechnicianEmployee: async (req, callback) => {
    try {
-    console.log("getAlltech:", req.query)
+    // console.log("getAlltech:", req.query)
     const { sp_id } = req.query;
     const getall_technician = {
       text: 'SELECT * FROM employee WHERE role = $1 AND sp_id = $2',
@@ -214,7 +222,7 @@ module.exports = {
         getall_technician,
         (err, result) => {
          if (err){
-          console.log(err)
+          // console.log(err)
           return callback(true, "Unable to fetch the technican details");
          }
            else {
@@ -285,8 +293,9 @@ getAllEmployee: async (req, callback) => {
           SELECT * 
           FROM employee 
           WHERE sp_id = $1
+          AND is_deleted <> $2
       `;
-      const queryParams = [sp_id];
+      const queryParams = [sp_id,true];
 
       if (q) { // This is for search functionality
           queryText += `
@@ -335,7 +344,7 @@ getAllEmployee: async (req, callback) => {
 // To get all model as per brand 
 getAllModelPerBrand: async (req, callback) => {
   try {
-    console.log(req.body)
+    // console.log(req.body)
     const getall_models = {
       text: 'SELECT model_name, brand_name FROM models',
     };
@@ -362,7 +371,7 @@ getAllModelPerBrand: async (req, callback) => {
               const resultArray = Object.keys(brandModelMap).map(brand_name => {
                 return { [brand_name]: brandModelMap[brand_name] };
               });
-              console.log(resultArray);
+              // console.log(resultArray);
             const results = {
               results: resultArray,
               pagination: {
@@ -390,7 +399,7 @@ getAllAppointment: async (req, callback) => {
     const queryParams = [sp_id];
 
     if (q) { // This is for search functionality
-      queryText += ' AND (name ILIKE $2 OR email ILIKE $2 OR role ILIKE $2 OR status ILIKE $2 OR mobile ILIKE $2  )';
+      queryText += ' AND (name ILIKE $2 OR email ILIKE $2 OR role ILIKE $2 OR status ILIKE $2 OR mobile ILIKE $2)';
       queryParams.push(`%${q}%`);
     }
 
@@ -422,20 +431,61 @@ getAllAppointment: async (req, callback) => {
   }
 },
 
-// get All Model as per brands to create appointment.
-  createEmployee:async (req, callback) => {
-    try {
-      var body = req.body
-      const query = 'INSERT INTO employee (sp_id, name, email, mobile, gender, role, address, country, state, city, pin_code, pan_number, password, status, is_deleted,permission_granted) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) RETURNING *';
-      const values = [body.sp_id, body.name, body.email, body.mobile, body.gender, body.role,body.address,body.country,body.state,body.city,body.pin_code,body.pan_number,body.password,body.status, false,body.permission_granted];
+// create Employee old
+  // createEmployee:async (req, callback) => {
+  //   try {
+  //     var body = req.body
+  //     const query = 'INSERT INTO employee (sp_id, name, email, mobile, gender, role, address, country, state, city, pin_code, pan_number, password, status, is_deleted,permission_granted) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) RETURNING *';
+  //     const values = [body.sp_id, body.name, body.email, body.mobile, body.gender, body.role,body.address,body.country,body.state,body.city,body.pin_code,body.pan_number,body.password,body.status, false,body.permission_granted];
       
+  //     const data = await new Promise((resolve) => {
+  //       client.query(query, values, (err, result) => {
+  //         if (err) {
+  //           console.error('Error in creating new Employee:', err);
+  //           return callback(true, 'Employee creation failed');
+  //         }
+  //         // console.log('New Employee created successfully!');
+  //         return callback(false, result.rows);
+  //       });
+  //     });
+  //   } catch (error) {
+  //     console.error('Error in creating new Employee:', error);
+  //     return callback(true, error.message);
+  //   }
+  // },
+
+  // New create Employee where it checks the email duplication.
+
+  createEmployee: async (req, callback) => {
+    try {
+      var body = req.body;
+  
+      // Check if email already exists
+      const checkEmailQuery = 'SELECT COUNT(*) FROM employee WHERE email = $1';
+      const checkEmailValues = [body.email];
+      const emailExists = await new Promise((resolve) => {
+        client.query(checkEmailQuery, checkEmailValues, (err, result) => {
+          if (err) {
+            console.error('Error in checking email:', err);
+            return callback(true, 'Error in checking email');
+          }
+          resolve(result.rows[0].count > 0);
+        });
+      });
+  
+      if (emailExists) {
+        return callback(true, 'This email id already exists in the system');
+      }
+  
+      const query = 'INSERT INTO employee (sp_id, name, email, mobile, gender, role, address, country, state, city, pin_code, pan_number, password, status, is_deleted, permission_granted) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) RETURNING *';
+      const values = [body.sp_id, body.name, body.email, body.mobile, body.gender, body.role, body.address, body.country, body.state, body.city, body.pin_code, body.pan_number, body.password, body.status, false, body.permission_granted];
+  
       const data = await new Promise((resolve) => {
         client.query(query, values, (err, result) => {
           if (err) {
             console.error('Error in creating new Employee:', err);
             return callback(true, 'Employee creation failed');
           }
-          console.log('New Employee created successfully!');
           return callback(false, result.rows);
         });
       });
@@ -444,6 +494,8 @@ getAllAppointment: async (req, callback) => {
       return callback(true, error.message);
     }
   },
+  
+
 
   // I think we need to change this create Appointment as per new dialog
 
@@ -459,7 +511,7 @@ getAllAppointment: async (req, callback) => {
             console.error('Error in creating Appointment:', err);
             return callback(true, 'Appointment creation failed');
           }
-          console.log('Appointment created successfully!');
+          // console.log('Appointment created successfully!');
           return callback(false, result.rows);
         });
       });
@@ -502,7 +554,7 @@ getAllAppointment: async (req, callback) => {
           if (result.rows.length === 0) {
             return callback(true, 'Appointment not found or cannot be updated');
           }
-          console.log(`Appointment ${appointment_status} successfully!`);
+          // console.log(`Appointment ${appointment_status} successfully!`);
           return callback(false, result.rows);
         });
       });
@@ -714,7 +766,7 @@ getAllAppointment: async (req, callback) => {
   addSpares:async (req, callback) => {
     try {
       var body = req.body;
-      console.log("ln 1290",body)
+      // console.log("ln 1290",body)
       // Parse the string values to integers
       const scgst = parseInt(body.scgst, 10);
       const cgst = parseInt(body.cgst, 10);
@@ -737,7 +789,7 @@ getAllAppointment: async (req, callback) => {
             console.error('Error in adding spare part', err);
             return callback(true, 'Could not add the spare part');
           }
-          console.log('Spare added to the system successfully!', result.rows);
+          // console.log('Spare added to the system successfully!', result.rows);
           return callback(false, result.rows);
         });
       });
@@ -751,7 +803,7 @@ getAllAppointment: async (req, callback) => {
   addLabour:async (req, callback) => {
     try {
       var body = req.body
-      console.log("ln 1258", body)
+      // console.log("ln 1258", body)
       const price = parseInt(body.selling_price, 10);
       const scgst = parseInt(body.scgst, 10);
       const cgst = parseInt(body.cgst, 10);
@@ -763,7 +815,7 @@ getAllAppointment: async (req, callback) => {
             console.error('Error in adding spare part', err);
             return callback(true, 'Could not add the labour');
           }
-          console.log('Labour added to the system successfully!', result.rows);
+          // console.log('Labour added to the system successfully!', result.rows);
           return callback(false, result.rows);
         });
       });
@@ -780,13 +832,12 @@ getAllAppointment: async (req, callback) => {
       let queryText = 'SELECT * FROM spares WHERE sp_id = $1 AND is_deleted = $2';
   
       const queryParams = [sp_id, false];
-      console.log('ln 1284', queryText);
+      // console.log('ln 1284', queryText);
   
       // Calculate the OFFSET based on the _page and _limit parameters
       const offset = (_page - 1) * _limit;
   
       if (q) { // This is for search functionality
-        console.log("inside q ln 1291", q);
         queryText += `
           AND (spare_name ILIKE $${queryParams.length + 1}
           OR hsn_sac ILIKE $${queryParams.length + 2}
@@ -840,7 +891,7 @@ getAllAppointment: async (req, callback) => {
         // console.log("ln 1390", offset )
       if (q) { // This is for search functionality
         queryText += ' AND (labour_name ILIKE $3 OR hsn_sac ILIKE $3)';
-        console.log(queryText, "ln 1393")
+        // console.log(queryText, "ln 1393")
         queryParams.push(`%${q}%`);
       }
       // console.log("ln 1395", queryParams, queryText)
@@ -916,7 +967,7 @@ getAllAppointment: async (req, callback) => {
             return callback(true, 'Unable to delete the spare');
           } else {
             if (result.rows.length > 0) {
-              console.log(result.rows[0])
+              // console.log(result.rows[0])
               return callback(false, result.rows[0]);
             } else {
               // No matching email found
@@ -937,7 +988,7 @@ getAllAppointment: async (req, callback) => {
           const sequenceName = 'estimate_number_seq'; // Replace with your sequence name
           const { rows } = await client.query(`SELECT nextval('${sequenceName}')`);
           const estimateNumber = rows[0].nextval;
-        console.log("ln 1491", req.body)
+        // console.log("ln 1491", req.body)
         const { sp_id,sparePayload, labourPayload,appointment_id,estimate_created_by } = req.body;
 
         // Insert spare parts
@@ -962,7 +1013,7 @@ getAllAppointment: async (req, callback) => {
         const values = ['Created',appointment_id, sp_id,estimateNumber,estimate_created_by];  
         client.query(query, values)
   
-        console.log('Estimate data inserted successfully!');
+        // console.log('Estimate data inserted successfully!');
         callback(false, 'Estimate data inserted successfully!');
     } catch (error) {
         console.error('Error in adding estimate: ', error);
@@ -976,7 +1027,7 @@ getAllAppointment: async (req, callback) => {
     // return false
       const { appointment_id, sp_id, estimate_number } = req.query;
       const estimateValues = [estimate_number,sp_id];
-      console.log("ln 1463", sp_id,estimate_number)
+      // console.log("ln 1463", sp_id,estimate_number)
       // Fetch spare details for the specific estimate_number
       const spareQuery = `
       SELECT * FROM estimate
@@ -991,7 +1042,7 @@ getAllAppointment: async (req, callback) => {
       WHERE estimate_number = $1 AND type = 'labour' AND sp_id = $2 
       `;
       const labourResult = await client.query(labourQuery, estimateValues);
-    console.log("ln 1477", spareResult)
+    // console.log("ln 1477", spareResult)
       // Prepare and structure the retrieved data
       const data = {
           spares: spareResult.rows,
@@ -999,7 +1050,7 @@ getAllAppointment: async (req, callback) => {
        
       };
 
-      console.log('Estimate details retrieved successfully!', data);
+      // console.log('Estimate details retrieved successfully!', data);
       callback(false, data);
   } catch (error) {
       console.error('Error in fetching estimate details: ', error);
@@ -1012,7 +1063,7 @@ editEstimate : async (req, callback) => {
       const { estimate_number,sp_id,sparePayload, labourPayload,appointment_id } = req.body;
 
       // Delete previous 
-      console.log("Entered editEstimate ln 1566", estimate_number, sp_id)
+      // console.log("Entered editEstimate ln 1566", estimate_number, sp_id)
       const deleteOldEstimateQuery = `
       DELETE FROM estimate
       WHERE estimate_number = $1 AND sp_id = $2 `;
@@ -1041,7 +1092,7 @@ editEstimate : async (req, callback) => {
       const values = ['Created',appointment_id, sp_id];  
       client.query(query, values)
 
-      console.log('Estimate data edited successfully!');
+      // console.log('Estimate data edited successfully!');
       callback(false, 'Estimate data edited successfully!');
   } catch (error) {
       console.error('Error in editing estimate: ', error);
@@ -1085,7 +1136,7 @@ getAllLabourListForAutoFill: async (req, callback) => {
     const queryParams = [sp_id,false];
     if (q) { // This is for search functionality
       queryText += ' AND (labour_name ILIKE $3 OR hsn_sac ILIKE $3)';
-      console.log(queryText, "ln 1393")
+      // console.log(queryText, "ln 1393")
       queryParams.push(`%${q}%`);
     }
     // console.log("ln 1395", queryParams, queryText)
@@ -1154,7 +1205,7 @@ getAllSpareListForAutoFill: async (req, callback) => {
 getSpecificSpareDetailsForEstimate: async (req, callback) => {
   try {
     const { sp_id, spare_name } = req.query;
-    console.log("ln 1705", sp_id, spare_name);
+    // console.log("ln 1705", sp_id, spare_name);
     let queryText =
       'SELECT spare_id,spare_name,hsn_sac,selling_price,tax FROM spares  WHERE sp_id = $1 AND spare_name = $2 AND is_deleted = $3';
     const queryParams = [sp_id, spare_name, false];
@@ -1169,7 +1220,7 @@ getSpecificSpareDetailsForEstimate: async (req, callback) => {
           console.log(err);
           return callback(true, "Unable to fetch the spare details");
         } else {
-          console.log("ln 1720 ", result.rows);
+          // console.log("ln 1720 ", result.rows);
 
           // Renaming spare_name to name in the result
           const modifiedResult = result.rows[0];
@@ -1190,7 +1241,7 @@ getSpecificSpareDetailsForEstimate: async (req, callback) => {
 getSpecificLabourDetailsForEstimate: async (req, callback) => {
   try {
     const {sp_id,labour_name} = req.query;
-    console.log('ln 1729', sp_id, labour_name)
+    // console.log('ln 1729', sp_id, labour_name)
     let queryText = 'SELECT labour_id,labour_name,hsn_sac,selling_price,tax FROM labour  WHERE sp_id = $1 AND labour_name = $2 AND is_deleted = $3'; 
     const queryParams = [sp_id,labour_name,false];
     const get_labour = {
@@ -1222,7 +1273,7 @@ getSpecificLabourDetailsForEstimate: async (req, callback) => {
 getSpecificVechicleDetailsToCreateEstimate: async (req, callback) => {
   try {
     const {sp_id,vehicle_number} = req.query;
-    console.log('ln 1729', sp_id, vehicle_number)
+    // console.log('ln 1729', sp_id, vehicle_number)
     let queryText = 'SELECT * FROM appointment_details  WHERE sp_id = $1 AND vehicle_number = $2 '; 
     const queryParams = [sp_id,vehicle_number];
     const get_vehicle = {
@@ -1346,7 +1397,7 @@ getAllCreatedEstimateList: async (req, callback) => {
 addEmployeeRole:async (req, callback) => {
   try {
     var body = req.body
-    console.log("ln 1258", body)
+    // console.log("ln 1258", body)
     const query = 'INSERT INTO employee_roles (sp_id,role_name,permission_granted)  VALUES ($1, $2, $3) RETURNING *';
     const values = [body.sp_id,body.role_name,body.permission_granted];
     const data = await new Promise((resolve) => {
@@ -1355,7 +1406,7 @@ addEmployeeRole:async (req, callback) => {
           console.error('Error in adding employee role', err);
           return callback(true, 'Could not add the new employee role');
         }
-        console.log('Employee role added to the system successfully!', result.rows);
+        // console.log('Employee role added to the system successfully!', result.rows);
         return callback(false, result.rows);
       });
     });
@@ -1377,7 +1428,7 @@ getAllEmployeeRoles: async (req, callback) => {
       // console.log("ln 1390", offset )
     if (q) { // This is for search functionality
       queryText += ' AND (role_name ILIKE $3)';
-      console.log(queryText, "ln 1393")
+      // console.log(queryText, "ln 1393")
       queryParams.push(`%${q}%`);
     }
     // console.log("ln 1395", queryParams, queryText)
@@ -1520,7 +1571,7 @@ deleteEmployeeRole: async (req, callback) => { // As per new inputs
           return callback(true, 'Unable to delete the role');
         } else {
           if (result.rows.length > 0) {
-            console.log(result.rows[0])
+            // console.log(result.rows[0])
             return callback(false, result.rows[0]);
           } else {
             // No matching email found
@@ -1661,11 +1712,11 @@ getAllCreatedJobcardList: async (req, callback) => {
 
 getJobcardDetails : async (req, callback) => {
   try {
-    console.log(req.query)
+    // console.log(req.query)
     // return false
       const { sp_id, jobcard_number } = req.query;
       const labourValues = [jobcard_number,sp_id];
-      console.log("ln 1463", sp_id,jobcard_number)
+      // console.log("ln 1463", sp_id,jobcard_number)
       // Fetch spare details for the specific jobcard_number
       const spareQuery = `
       SELECT * FROM jobcard
@@ -1680,7 +1731,7 @@ getJobcardDetails : async (req, callback) => {
       WHERE jobcard_number = $1 AND type = 'labour' AND sp_id = $2 
       `;
       const labourResult = await client.query(labourQuery, labourValues);
-    console.log("ln 1477", spareResult)
+    // console.log("ln 1477", spareResult)
       // Prepare and structure the retrieved data
       const data = {
           spares: spareResult.rows,
@@ -1688,7 +1739,7 @@ getJobcardDetails : async (req, callback) => {
        
       };
 
-      console.log('Job Card details retrieved successfully!', data);
+      // console.log('Job Card details retrieved successfully!', data);
       callback(false, data);
   } catch (error) {
       console.error('Error in fetching jobcard details: ', error);
@@ -1701,7 +1752,7 @@ updateJobcard : async (req, callback) => {
       const { jobcard_number,sp_id,sparePayload, labourPayload,appointment_id,jobcard_created_by,advisor_name,technician_name } = req.body;
 
       // Delete previous 
-      console.log("Entered updateJobCard ln 2059", jobcard_number, sp_id)
+      // console.log("Entered updateJobCard ln 2059", jobcard_number, sp_id)
       const deleteOldJobcardQuery = `
       DELETE FROM jobcard
       WHERE jobcard_number = $1 AND sp_id = $2 `;
@@ -1731,7 +1782,7 @@ updateJobcard : async (req, callback) => {
       const values = [jobcard_created_by,advisor_name,technician_name,"Yes",appointment_id, sp_id,jobcard_number];  
       client.query(query, values)
 
-      console.log('Jobcard data edited successfully!');
+      // console.log('Jobcard data edited successfully!');
       callback(false, 'Jobcard data edited successfully!');
   } catch (error) {
       console.error('Error in editing jobcard : ', error);
@@ -1756,7 +1807,7 @@ updateJobcard : async (req, callback) => {
            return callback(true, "Unable to fetch the Advisor details");
           }
             else {
-              console.log("ln 2091", result.rows)
+              // console.log("ln 2091", result.rows)
              let technican_names = [];
              technican_names = result.rows.map(({ name, designation }) => `${name} (${designation})`);
              const resultArray = technican_names.map(technician_name => ({
@@ -1793,7 +1844,7 @@ updateJobcard : async (req, callback) => {
   generateInvoice: async (req, callback) => {
     try {
       var body = req.body;
-      console.log("ln 1258", body);
+      // console.log("ln 1258", body);
       const { sp_id, appointment_id, jobcard_number, estimate_number, bill_amount, vehicle_number, invoice_generated_by } = req.body;
   
       // Generate or retrieve the sequence number
@@ -1811,7 +1862,7 @@ updateJobcard : async (req, callback) => {
             return callback(true, 'Could not generate invoice');
           }
   
-          console.log('Invoice generated successfully!', result.rows);
+          // console.log('Invoice generated successfully!', result.rows);
   
           // Now, update the appointment table
           const updateQuery = 'UPDATE appointment SET invoice_created_by = $1, payment_status = $2,invoice_number = $3,service_completed_on = CURRENT_DATE,invoice_amount = $4 WHERE appointment_id = $5 AND jobcard_number = $6';
@@ -1819,7 +1870,7 @@ updateJobcard : async (req, callback) => {
   
           try {
             await client.query(updateQuery, updateValues);
-            console.log('Appointment table updated successfully!');
+            // console.log('Appointment table updated successfully!');
             return callback(false, result.rows);
           } catch (updateError) {
             console.error('Error updating appointment table', updateError);
@@ -1852,14 +1903,14 @@ updateJobcard : async (req, callback) => {
             const updateAppointmentResult = await client.query(updateAppointmentQuery, appointmentValues);
 
             if (updateAppointmentResult.rowCount > 0) {
-                console.log('Payment Received successfully!');
+                // console.log('Payment Received successfully!');
                 callback(false, 'Payment Received successfully!');
             } else {
-                console.log('No matching records found in appointment table for update.');
+                // console.log('No matching records found in appointment table for update.');
                 callback(true, 'No matching records found in appointment table for update.');
             }
         } else {
-            console.log('No matching records found in invoice table for update.');
+            // console.log('No matching records found in invoice table for update.');
             callback(true, 'No matching records found in invoice table for update.');
         }
         await client.query('COMMIT');
@@ -1873,7 +1924,7 @@ updateJobcard : async (req, callback) => {
   updateInvoice: async (req, callback) => {
     try {
       var body = req.body;
-      console.log("ln 1258", body);
+      // console.log("ln 1258", body);
       const { sp_id, appointment_id, jobcard_number, estimate_number, bill_amount, vehicle_number, invoice_generated_by } = req.body;
   
       // Generate or retrieve the sequence number
@@ -1891,7 +1942,7 @@ updateJobcard : async (req, callback) => {
             return callback(true, 'Could not generate invoice');
           }
   
-          console.log('Invoice generated successfully!', result.rows);
+          // console.log('Invoice generated successfully!', result.rows);
   
           // Now, update the appointment table
           const updateQuery = 'UPDATE appointment SET invoice_created_by = $1, payment_status = $2,invoice_number = $3,service_completed_on = CURRENT_DATE,invoice_amount = $4 WHERE appointment_id = $5 AND jobcard_number = $6';
@@ -1899,7 +1950,7 @@ updateJobcard : async (req, callback) => {
   
           try {
             await client.query(updateQuery, updateValues);
-            console.log('Appointment table updated successfully!');
+            // console.log('Appointment table updated successfully!');
             return callback(false, result.rows);
           } catch (updateError) {
             console.error('Error updating appointment table', updateError);
@@ -2116,9 +2167,9 @@ updateJobcard : async (req, callback) => {
       const queryParams = [];
       if (q) { // This is for search functionality
         queryText += ' WHERE (vehicle_number ILIKE $1)';
-        console.log(queryText, "ln 1393")
+        // console.log(queryText, "ln 1393")
         queryParams.push(`${q}%`);
-        console.log("ln 1610",queryParams)
+        // console.log("ln 1610",queryParams)
       }
       // console.log("ln 1395", queryParams, queryText)
       const get_all_vehicles = {
@@ -2147,7 +2198,7 @@ updateJobcard : async (req, callback) => {
     try {
 
       const {vehicle_number } = req.query;
-      console.log("ln 1639 ", vehicle_number)
+      // console.log("ln 1639 ", vehicle_number)
       let queryText =
         'SELECT *  FROM customer_vehicle_data  WHERE vehicle_number = $1';
       const queryParams = [vehicle_number];
@@ -2197,13 +2248,13 @@ updateJobcard : async (req, callback) => {
        // Query to get the total number of Active service providers
          const getActiveServiceProviderCountQuery = {
           text: 'SELECT COUNT(*) FROM approved_service_providers WHERE sp_status = $1',
-          values: ['active']
+          values: ['Active']
         };
 
         // Query to get the total number of Inactive service providers
            const getInactiveServiceProviderCountQuery = {
             text: 'SELECT COUNT(*) FROM approved_service_providers WHERE sp_status = $1',
-            values: ['inactive']
+            values: ['Inactive']
           };
 
            // Query to get the total number of Pending service providers
@@ -2388,6 +2439,86 @@ getAllBrandsMultiSelect: async (req, callback) => {
     return callback(true, e.message);
   }
 },
+
+updateEmployee: async (req, callback) => {
+  try {
+    var body = req.body;
+
+    const query = `UPDATE employee SET
+      name = $1,
+      email = $2,
+      mobile = $3,
+      gender = $4,
+      role = $5,
+      address = $6,
+      country = $7,
+      state = $8,
+      city = $9,
+      pin_code = $10,
+      pan_number = $11,
+      password = $12,
+      status = $13,
+      is_deleted = $14,
+      permission_granted = $15
+      WHERE sp_id = $16 AND emp_id = $17
+      RETURNING *`;
+
+    const values = [
+      body.name, body.email, body.mobile, body.gender, body.role,
+      body.address, body.country, body.state, body.city, body.pin_code,
+      body.pan_number, body.password, body.status, false, body.permission_granted,
+      body.sp_id, body.emp_id
+    ];
+
+    const data = await new Promise((resolve, reject) => {
+      client.query(query, values, (err, result) => {
+        if (err) {
+          console.error('Error in updating Employee:', err);
+          return callback(true, 'Employee update failed');
+        }
+        if (result.rows.length > 0) {
+          // console.log('Employee updated successfully!');
+          return callback(false,'Employee updated successfully!');
+        } else {
+          return callback(true, 'Employee not found');
+        }
+      });
+    });
+  } catch (error) {
+    console.error('Error in updating Employee:', error);
+    return callback(true, error.message);
+  }
+},
+
+
+deleteEmployee: async (req, callback) => { // As per new inputs
+  try {
+    var body = req.body;  
+    const emp_id = parseInt(body.emp_id, 10);
+    // console.log("ln 1373", role_id)
+    // Define the SQL query to update the profile
+    const query = 'UPDATE employee SET is_deleted = $1 WHERE emp_id = $2 RETURNING *'; 
+    const values = [true,emp_id];  
+    const data = await new Promise((resolve) => {
+      client.query(query, values, (err, result) => {
+        if (err) {
+          return callback(true, 'Unable to delete the employee');
+        } else {
+          if (result.rows.length > 0) {
+            // console.log(result.rows[0])
+            return callback(false, result.rows[0]);
+          } else {
+            // No matching email found
+            return callback(true, 'Employee not found in backend system');
+          }
+        }
+      });
+    });
+  } catch (error) {
+    return callback(true, error.message);
+  }
+},
+
 
   
 
