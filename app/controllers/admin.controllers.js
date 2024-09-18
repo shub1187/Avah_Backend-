@@ -270,7 +270,7 @@ module.exports = {
         res.send({
           error: false,
           message: "Approved service providers list fetched successfully",
-          data: results,     
+          data: results
         });
       }
     });
@@ -529,7 +529,7 @@ getAllFuelTypeAutoFill: (req,res)=>{
       else
         res.send({
           error: false,
-          message: "success",
+          message: "Updated the status of service provider successfully",
           data: results,
         });
     });
@@ -617,19 +617,29 @@ getAllFuelTypeAutoFill: (req,res)=>{
 
   createBrand: (req, res) => {
     createBrand(req, (err, results) => {
-      if (err)
-        res.status(500).send({
-          error: true,
-          message: results || "Something Went wrong. Please try again later",
-        });
-      else
+      if (err) {
+        if (results === 'This Brand already exists in the system') {
+          return res.status(400).send({
+            error: true,
+            message: results,
+          });
+        } else {
+          return res.status(500).send({
+            error: true,
+            message: results || "Something went wrong. Please try again later.",
+          });
+        }
+      } else {
         res.send({
           error: false,
-          message: "success",
-          data: results,
+          message: `${results[0].brand_name} brand added to the system successfully`,
+          // data: results,
         });
+      }
     });
   },
+  
+  
 
   getBrandSearch: (req, res) => {
     getBrandSearch(req, (err, results) => {
@@ -849,7 +859,7 @@ getAllFuelTypeAutoFill: (req,res)=>{
       else
         res.send({
           error: false,
-          message: "success",
+          message: `${results[0].fuel_name} added to the system successfully`,
           data: results,
         });
     });

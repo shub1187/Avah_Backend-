@@ -245,62 +245,97 @@ module.exports = {
 
       get_customer_vehicles: async (req, callback) => {
         try {
-            const { customer_id, q, _page, _limit } = req.query;
-    
-            // Calculate the OFFSET based on the _page and _limit parameters
-            const offset = (_page - 1) * _limit;
-    
-            // Construct a SQL query without LIMIT and OFFSET
-            let queryText = `
-                SELECT vehicle_number, vehicle_type, brand, model, customization, fuel_type 
-                FROM customer_vehicle_data 
-                WHERE customer_id = $1
+          const { customer_id, q, _page, _limit } = req.query;
+      
+          // Calculate the OFFSET based on the _page and _limit parameters
+          const offset = (_page - 1) * _limit;
+      
+          // Main query to fetch the data
+          let queryText = `
+              SELECT vehicle_number, vehicle_type, brand, model, customization, fuel_type
+              FROM customer_vehicle_data
+              WHERE customer_id = $1
+          `;
+          // Count query to get the total number of records
+          let countQueryText = `
+              SELECT COUNT(*)
+              FROM customer_vehicle_data
+              WHERE customer_id = $1
+          `;
+          const queryParams = [customer_id];
+      
+          if (q) { // Search functionality
+            queryText += `
+                AND (vehicle_number ILIKE $${queryParams.length + 1}
+                OR vehicle_type ILIKE $${queryParams.length + 2}
+                OR brand ILIKE $${queryParams.length + 3}
+                OR model ILIKE $${queryParams.length + 4}
+                OR customization ILIKE $${queryParams.length + 5}
+                OR fuel_type ILIKE $${queryParams.length + 6})
             `;
-    
-            const queryParams = [customer_id];
-    
-            if (q) { // This is for search functionality
-                queryText += `
-                    AND (vehicle_number ILIKE $${queryParams.length + 1}
-                    OR vehicle_type ILIKE $${queryParams.length + 2}
-                    OR brand ILIKE $${queryParams.length + 3}
-                    OR model ILIKE $${queryParams.length + 4}
-                    OR customization ILIKE $${queryParams.length + 5}
-                    OR fuel_type ILIKE $${queryParams.length + 6})
-                `;
-                for (let i = 0; i < 6; i++) {
-                    queryParams.push(`%${q}%`);
-                }
+            countQueryText += `
+                AND (vehicle_number ILIKE $${queryParams.length + 1}
+                OR vehicle_type ILIKE $${queryParams.length + 2}
+                OR brand ILIKE $${queryParams.length + 3}
+                OR model ILIKE $${queryParams.length + 4}
+                OR customization ILIKE $${queryParams.length + 5}
+                OR fuel_type ILIKE $${queryParams.length + 6})
+            `;
+            for (let i = 0; i < 6; i++) {
+              queryParams.push(`%${q}%`);
             }
-    
-            // Add ORDER BY clause
-            queryText += ' ORDER BY vehicle_id DESC';
-    
-            // Add LIMIT and OFFSET
-            queryText += ' LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
-            queryParams.push(_limit, offset);
-    
-            const getall_customer_vehicles = {
-                text: queryText,
-                values: queryParams,
-            };
-    
-            const data = await new Promise((resolve) => {
-                client.query(getall_customer_vehicles, (err, result) => {
-                    if (err) {
-                        return callback(true, 'Error retrieving customer vehicles');
-                    } else {
-                            const results = {
-                                results: result.rows
-                            };
-                            return callback(false, results);
-                    }
-                });
-            });
+          }
+      
+          // Always include ORDER BY clause
+          queryText += ' ORDER BY vehicle_id DESC';
+      
+          // Add LIMIT and OFFSET
+          queryText += ' LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
+          queryParams.push(_limit, offset);
+      
+          const getall_customer_vehicles = {
+            text: queryText,
+            values: queryParams,
+          };
+      
+          const count_all_customer_vehicles = {
+            text: countQueryText,
+            values: queryParams.slice(0, -2),  // Exclude LIMIT and OFFSET
+          };
+      
+          const [result, countResult] = await Promise.all([
+            new Promise((resolve) => {
+              client.query(getall_customer_vehicles, (err, result) => {
+                if (err) {
+                  return callback(true, 'Error retrieving customer vehicles');
+                } else {
+                  resolve(result);
+                }
+              });
+            }),
+            new Promise((resolve) => {
+              client.query(count_all_customer_vehicles, (err, result) => {
+                if (err) {
+                  return callback(true, 'Error retrieving the count of customer vehicles');
+                } else {
+                  resolve(result);
+                }
+              });
+            })
+          ]);
+      
+          const results = {
+            results: result.rows,
+            totalRecords: parseInt(countResult.rows[0].count, 10)
+          };
+      
+          return callback(false, results);
+      
         } catch (error) {
-            return callback(true, error.message);
+          return callback(true, error.message);
         }
-    },
+      },
+      
     
     
 
@@ -683,103 +718,279 @@ module.exports = {
       //   }
       // },
 
-      getAllPendingApprovedAppointment: async (req, callback) => {
-        try {
-            // console.log("Entered getAllPendingApprovedAppointment");
-            const { customer_id, q, _page, _limit } = req.query;
-            let queryText = 'SELECT * FROM appointment_details WHERE customer_id = $1 AND (appointment_status = $2 OR appointment_status = $3) AND estimate_status <> $4';
-            const queryParams = [customer_id, 'Approved', 'Pending', 'Rejected By Customer'];
+    //   getAllPendingApprovedAppointment: async (req, callback) => {
+    //     try {
+    //         // console.log("Entered getAllPendingApprovedAppointment");
+    //         const { customer_id, q, _page, _limit } = req.query;
+    //         let queryText = 'SELECT * FROM appointment_details WHERE customer_id = $1 AND (appointment_status = $2 OR appointment_status = $3) AND estimate_status <> $4';
+    //         const queryParams = [customer_id, 'Approved', 'Pending', 'Rejected By Customer'];
     
-            // Calculate the OFFSET based on the _page and _limit parameters
-            const offset = (_page - 1) * _limit;
+    //         // Calculate the OFFSET based on the _page and _limit parameters
+    //         const offset = (_page - 1) * _limit;
     
-            if (q) { // Search functionality
-                // console.log("Search keyword:", q);
-                queryText += ' AND (vehicle_number ILIKE $' + (queryParams.length + 1) + ')';
-                queryParams.push(`%${q}%`);
-            }
+    //         if (q) { // Search functionality
+    //             // console.log("Search keyword:", q);
+    //             queryText += ' AND (vehicle_number ILIKE $' + (queryParams.length + 1) + ')';
+    //             queryParams.push(`%${q}%`);
+    //         }
     
-            // Always include ORDER BY clause
-            queryText += ' ORDER BY appointment_id DESC LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
-            queryParams.push(_limit, offset);
+    //         // Always include ORDER BY clause
+    //         queryText += ' ORDER BY appointment_id DESC LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
+    //         queryParams.push(_limit, offset);
     
-            const getall_employee = {
-                text: queryText,
-                values: queryParams,
-            };
+    //         const getall_employee = {
+    //             text: queryText,
+    //             values: queryParams,
+    //         };
     
-            const data = await new Promise((resolve) => {
-                client.query(getall_employee, (err, result) => {
-                    if (err) {
-                        console.error("Database query error:", err);
-                        return callback(true, "Unable to fetch the pending and approved appointment details");
-                    } else {
-                        const results = {
-                            results: result.rows
-                        };
-                        // console.log("Query results:", results);
-                        return callback(false, results);
-                    }
-                });
-            });
-        } catch (e) {
-            console.error("Error:", e);
-            return callback(true, e.message);
-        }
-    },
-    
-      // New Api 
+    //         const data = await new Promise((resolve) => {
+    //             client.query(getall_employee, (err, result) => {
+    //                 if (err) {
+    //                     console.error("Database query error:", err);
+    //                     return callback(true, "Unable to fetch the pending and approved appointment details");
+    //                 } else {
+    //                     const results = {
+    //                         results: result.rows
+    //                     };
+    //                     // console.log("Query results:", results);
+    //                     return callback(false, results);
+    //                 }
+    //             });
+    //         });
+    //     } catch (e) {
+    //         console.error("Error:", e);
+    //         return callback(true, e.message);
+    //     }
+    // },
 
-      getAllRejectedCancelledAppointment: async (req, callback) => {
-        try {
-            // console.log("Entered getAllRejectedCancelledAppointment");
-            const { customer_id, q, _page, _limit } = req.query;
+    // New Api.
+
+    getAllPendingApprovedAppointment: async (req, callback) => {
+      try {
+          const { customer_id, q, _page, _limit } = req.query;
+  
+          // Calculate the OFFSET based on the _page and _limit parameters
+          const offset = (_page - 1) * _limit;
+  
+          // Query to fetch the data
+          let queryText = `
+              SELECT * 
+              FROM appointment_details 
+              WHERE customer_id = $1 
+              AND (appointment_status = $2 OR appointment_status = $3) 
+              AND estimate_status <> $4
+          `;
+          // Query to count the total number of records
+          let countQueryText = `
+              SELECT COUNT(*) 
+              FROM appointment_details 
+              WHERE customer_id = $1 
+              AND (appointment_status = $2 OR appointment_status = $3) 
+              AND estimate_status <> $4
+          `;
+  
+          const queryParams = [customer_id, 'Approved', 'Pending', 'Rejected By Customer'];
+  
+          if (q) { // Search functionality
+              queryText += ' AND vehicle_number ILIKE $' + (queryParams.length + 1);
+              countQueryText += ' AND vehicle_number ILIKE $' + (queryParams.length + 1);
+              queryParams.push(`%${q}%`);
+          }
+  
+          // Always include ORDER BY clause
+          queryText += ' ORDER BY appointment_id DESC LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
+          queryParams.push(_limit, offset);
+  
+          const getall_appointments = {
+              text: queryText,
+              values: queryParams,
+          };
+  
+          const count_appointments = {
+              text: countQueryText,
+              values: queryParams.slice(0, -2),  // Exclude LIMIT and OFFSET
+          };
+  
+          const [result, countResult] = await Promise.all([
+              new Promise((resolve, reject) => {
+                  client.query(getall_appointments, (err, result) => {
+                      if (err) {
+                          return reject('Unable to fetch the pending and approved appointment details');
+                      } else {
+                          resolve(result);
+                      }
+                  });
+              }),
+              new Promise((resolve, reject) => {
+                  client.query(count_appointments, (err, result) => {
+                      if (err) {
+                          return reject('Unable to fetch the count of pending and approved appointments');
+                      } else {
+                          resolve(result);
+                      }
+                  });
+              })
+          ]);
+  
+          const results = {
+              results: result.rows,
+              totalRecords: parseInt(countResult.rows[0].count, 10)
+          };
+  
+          return callback(false, results);
+  
+      } catch (e) {
+          console.error("Error:", e);
+          return callback(true, e.message);
+      }
+  },
+  
     
-            // Calculate the OFFSET based on the _page and _limit parameters
-            const offset = (_page - 1) * _limit;
+      // Old Api 
+
+    //   getAllRejectedCancelledAppointment: async (req, callback) => {
+    //     try {
+    //         // console.log("Entered getAllRejectedCancelledAppointment");
+    //         const { customer_id, q, _page, _limit } = req.query;
     
-            let queryText = `
-                SELECT appointment_id, customer_id, sp_id, vehicle_number, vehicle_type, brand, model, fuel_type, pickup_drop, pickup_address, 
-                appointment_time, appointment_status, jobcard_status, customization, estimate_status, appointment_date, 
-                sp_name, sp_address, sp_email, sp_contact, sp_rejection_note, cust_cancellation_note, sp_cancellation_note 
-                FROM appointment_details 
-                WHERE customer_id = $1 AND (appointment_status = $2 OR appointment_status = $3 OR estimate_status = $4)
-            `;
+    //         // Calculate the OFFSET based on the _page and _limit parameters
+    //         const offset = (_page - 1) * _limit;
     
-            const queryParams = [customer_id, 'Rejected By SP', 'Cancelled By Customer', 'Rejected By Customer'];
+    //         let queryText = `
+    //             SELECT appointment_id, customer_id, sp_id, vehicle_number, vehicle_type, brand, model, fuel_type, pickup_drop, pickup_address, 
+    //             appointment_time, appointment_status, jobcard_status, customization, estimate_status, appointment_date, 
+    //             sp_name, sp_address, sp_email, sp_contact, sp_rejection_note, cust_cancellation_note, sp_cancellation_note 
+    //             FROM appointment_details 
+    //             WHERE customer_id = $1 AND (appointment_status = $2 OR appointment_status = $3 OR estimate_status = $4)
+    //         `;
     
-            if (q) { // This is for search functionality
-                queryText += ' AND (sp_name ILIKE $' + (queryParams.length + 1) + ' OR vehicle_number ILIKE $' + (queryParams.length + 1) + ' OR vehicle_type ILIKE $' + (queryParams.length + 1) + ' OR appointment_status ILIKE $' + (queryParams.length + 1) + ')';
-                queryParams.push(`%${q}%`);
-            }
+    //         const queryParams = [customer_id, 'Rejected By SP', 'Cancelled By Customer', 'Rejected By Customer'];
     
-            queryText += ' ORDER BY appointment_id DESC LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
-            queryParams.push(_limit, offset);
+    //         if (q) { // This is for search functionality
+    //             queryText += ' AND (sp_name ILIKE $' + (queryParams.length + 1) + ' OR vehicle_number ILIKE $' + (queryParams.length + 1) + ' OR vehicle_type ILIKE $' + (queryParams.length + 1) + ' OR appointment_status ILIKE $' + (queryParams.length + 1) + ')';
+    //             queryParams.push(`%${q}%`);
+    //         }
     
-            const getall_employee = {
-                text: queryText,
-                values: queryParams,
-            };
+    //         queryText += ' ORDER BY appointment_id DESC LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
+    //         queryParams.push(_limit, offset);
     
-            const data = await new Promise((resolve) => {
-                client.query(getall_employee, (err, result) => {
-                    if (err) {
-                        console.error("Database query error:", err);
-                        return callback(true, "Unable to fetch the rejected and cancelled appointment details");
-                    } else {
-                        const results = {
-                            results: result.rows
-                        };
-                        // console.log("Query results:", results);
-                        return callback(false, results);
-                    }
-                });
-            });
-        } catch (e) {
-            console.error("Error:", e);
-            return callback(true, e.message);
+    //         const getall_employee = {
+    //             text: queryText,
+    //             values: queryParams,
+    //         };
+    
+    //         const data = await new Promise((resolve) => {
+    //             client.query(getall_employee, (err, result) => {
+    //                 if (err) {
+    //                     console.error("Database query error:", err);
+    //                     return callback(true, "Unable to fetch the rejected and cancelled appointment details");
+    //                 } else {
+    //                     const results = {
+    //                         results: result.rows
+    //                     };
+    //                     // console.log("Query results:", results);
+    //                     return callback(false, results);
+    //                 }
+    //             });
+    //         });
+    //     } catch (e) {
+    //         console.error("Error:", e);
+    //         return callback(true, e.message);
+    //     }
+    // },
+
+    getAllRejectedCancelledAppointment: async (req, callback) => {
+      try {
+        const { customer_id, q, _page, _limit } = req.query;
+    
+        // Calculate the OFFSET based on the _page and _limit parameters
+        const offset = (_page - 1) * _limit;
+    
+        // Main query to fetch the data
+        let queryText = `
+          SELECT appointment_id, customer_id, sp_id, vehicle_number, vehicle_type, brand, model, fuel_type, pickup_drop, pickup_address, 
+          appointment_time, appointment_status, jobcard_status, customization, estimate_status, appointment_date, 
+          sp_name, sp_address, sp_email, sp_contact, sp_rejection_note, cust_cancellation_note, sp_cancellation_note 
+          FROM appointment_details 
+          WHERE customer_id = $1 AND (appointment_status = $2 OR appointment_status = $3 OR estimate_status = $4)
+        `;
+        
+        // Count query to get the total number of records
+        let countQueryText = `
+          SELECT COUNT(*)
+          FROM appointment_details
+          WHERE customer_id = $1 AND (appointment_status = $2 OR appointment_status = $3 OR estimate_status = $4)
+        `;
+        
+        const queryParams = [customer_id, 'Rejected By SP', 'Cancelled By Customer', 'Rejected By Customer'];
+        
+        if (q) { // Search functionality
+          queryText += `
+            AND (sp_name ILIKE $${queryParams.length + 1}
+            OR vehicle_number ILIKE $${queryParams.length + 1}
+            OR vehicle_type ILIKE $${queryParams.length + 1}
+            OR appointment_status ILIKE $${queryParams.length + 1})
+          `;
+          countQueryText += `
+            AND (sp_name ILIKE $${queryParams.length + 1}
+            OR vehicle_number ILIKE $${queryParams.length + 1}
+            OR vehicle_type ILIKE $${queryParams.length + 1}
+            OR appointment_status ILIKE $${queryParams.length + 1})
+          `;
+          queryParams.push(`%${q}%`);
         }
+    
+        // Always include ORDER BY clause
+        queryText += ' ORDER BY appointment_id DESC';
+    
+        // Add LIMIT and OFFSET
+        queryText += ' LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
+        queryParams.push(_limit, offset);
+    
+        const getall_appointments = {
+          text: queryText,
+          values: queryParams,
+        };
+    
+        const count_appointments = {
+          text: countQueryText,
+          values: queryParams.slice(0, -2),  // Exclude LIMIT and OFFSET
+        };
+    
+        const [result, countResult] = await Promise.all([
+          new Promise((resolve, reject) => {
+            client.query(getall_appointments, (err, result) => {
+              if (err) {
+                return reject('Unable to fetch the rejected and cancelled appointment details');
+              } else {
+                resolve(result);
+              }
+            });
+          }),
+          new Promise((resolve, reject) => {
+            client.query(count_appointments, (err, result) => {
+              if (err) {
+                return reject('Unable to fetch the count of rejected and cancelled appointments');
+              } else {
+                resolve(result);
+              }
+            });
+          })
+        ]);
+    
+        const results = {
+          results: result.rows,
+          totalRecords: parseInt(countResult.rows[0].count, 10)
+        };
+    
+        return callback(false, results);
+    
+      } catch (e) {
+        console.error("Error:", e);
+        return callback(true, e.message);
+      }
     },
+    
     
 
      

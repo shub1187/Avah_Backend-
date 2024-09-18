@@ -108,21 +108,9 @@ router.post("/createServiceProvider", checkToken, createServiceProvider);
 router.post("/getServiceProviderById", checkToken, getServiceProviderById);
 router.get("/getServiceProviderSearch", checkToken, getServiceProviderSearch);
 router.post("/deleteServiceProvider", checkToken, deleteServiceProvider);
-router.post(
-  "/updateServiceProviderPassword",
-  checkToken,
-  updateServiceProviderPassword
-);
-router.post(
-  "/updateServiceProviderActive",
-  checkToken,      // we need it while testing on postman shub commented it out
-  updateServiceProviderActive
-);
-router.post(
-  "/updateServiceProviderDetail",
-  checkToken,
-  updateServiceProviderDetail
-);
+router.post("/updateServiceProviderPassword",checkToken,updateServiceProviderPassword);
+router.post("/updateServiceProviderActive",checkToken,updateServiceProviderActive);
+router.post("/updateServiceProviderDetail",checkToken,updateServiceProviderDetail);
 
 // Users
 router.get("/getAllCustomers", checkToken, getAllCustomers);

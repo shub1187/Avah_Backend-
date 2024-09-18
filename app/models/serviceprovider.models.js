@@ -289,56 +289,93 @@ getAllEmployee: async (req, callback) => {
       // Calculate the OFFSET based on the _page and _limit parameters
       const offset = (_page - 1) * _limit;
 
+      // Query to fetch the data
       let queryText = `
           SELECT * 
           FROM employee 
           WHERE sp_id = $1
           AND is_deleted <> $2
       `;
-      const queryParams = [sp_id,true];
+      // Query to count the total number of records
+      let countQueryText = `
+          SELECT COUNT(*) 
+          FROM employee 
+          WHERE sp_id = $1
+          AND is_deleted <> $2
+      `;
 
-      if (q) { // This is for search functionality
+      const queryParams = [sp_id, true];
+      let countQueryParams = [sp_id, true];
+
+      if (q) { // Search functionality
           queryText += `
-              AND (name ILIKE $${queryParams.length + 1}
-              OR email ILIKE $${queryParams.length + 1}
-              OR role ILIKE $${queryParams.length + 1}
-              OR status ILIKE $${queryParams.length + 1}
-              OR mobile ILIKE $${queryParams.length + 1})
+              AND (name ILIKE $3
+              OR email ILIKE $3
+              OR role ILIKE $3
+              OR status ILIKE $3
+              OR mobile ILIKE $3)
+          `;
+          countQueryText += `
+              AND (name ILIKE $3
+              OR email ILIKE $3
+              OR role ILIKE $3
+              OR status ILIKE $3
+              OR mobile ILIKE $3)
           `;
           queryParams.push(`%${q}%`);
+          countQueryParams.push(`%${q}%`);
       }
 
-      // Add ORDER BY clause
-      queryText += ' ORDER BY emp_id DESC';
-
-      // Add LIMIT and OFFSET
-      queryText += ' LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
+      // Add ORDER BY clause, LIMIT, and OFFSET
+      queryText += ' ORDER BY emp_id DESC LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
       queryParams.push(_limit, offset);
 
-      const getall_employee = {
+      const getEmployees = {
           text: queryText,
           values: queryParams,
       };
 
-      const data = await new Promise((resolve) => {
-          client.query(getall_employee, (err, result) => {
-              if (err) {
-                  console.error("Database query error:", err);
-                  return callback(true, "Unable to fetch the technician details");
-              } else {
-                  const results = {
-                      results: result.rows
-                  };
-                  // console.log("Query results:", results);
-                  return callback(false, results);
-              }
-          });
-      });
+      const countEmployees = {
+          text: countQueryText,
+          values: countQueryParams,
+      };
+
+      // Execute both queries concurrently
+      const [employeesResult, countResult] = await Promise.all([
+          new Promise((resolve, reject) => {
+              client.query(getEmployees, (err, result) => {
+                  if (err) {
+                      return reject('Unable to fetch the employee details');
+                  } else {
+                      resolve(result);
+                  }
+              });
+          }),
+          new Promise((resolve, reject) => {
+              client.query(countEmployees, (err, result) => {
+                  if (err) {
+                      return reject('Unable to fetch the count of employees');
+                  } else {
+                      resolve(result);
+                  }
+              });
+          })
+      ]);
+
+      const results = {
+          results: employeesResult.rows,
+          totalRecords: parseInt(countResult.rows[0].count, 10)
+      };
+
+      return callback(false, results);
+
   } catch (e) {
       console.error("Error:", e);
       return callback(true, e.message);
   }
 },
+
+
 
 
 // To get all model as per brand 
@@ -569,60 +606,102 @@ getAllAppointment: async (req, callback) => {
   getAllPendingAppointment: async (req, callback) => {
     try {
         const { sp_id, q, _page, _limit } = req.query;
-
-        // Calculate the OFFSET based on the _page and _limit parameters
         const offset = (_page - 1) * _limit;
 
+        // Query to fetch the data
         let queryText = `
             SELECT appointment_id, name, vehicle_number, vehicle_type, brand, model, customization, fuel_type, email, mobile_number, 
-            pickup_drop, appointment_date, appointment_time, appointment_status, estimate_status, pickup_address,complaints,kilometers_driven 
+            pickup_drop, appointment_date, appointment_time, appointment_status, estimate_status, pickup_address, complaints, kilometers_driven 
             FROM appointment 
-            WHERE sp_id = $1 AND (appointment_status = $2 OR appointment_status = $3) AND estimate_status <> $4 
-            AND has_customer_cancelled <> $5 AND jobcard_status <> $6
+            WHERE sp_id = $1 
+            AND (appointment_status = $2 OR appointment_status = $3) 
+            AND estimate_status <> $4 
+            AND has_customer_cancelled <> $5 
+            AND jobcard_status <> $6
         `;
-        const queryParams = [sp_id, 'Approved', 'Pending', 'Created', true, 'Created'];
+        
+        // Query to count the total number of records
+        let countQueryText = `
+            SELECT COUNT(*) 
+            FROM appointment 
+            WHERE sp_id = $1 
+            AND (appointment_status = $2 OR appointment_status = $3) 
+            AND estimate_status <> $4 
+            AND has_customer_cancelled <> $5 
+            AND jobcard_status <> $6
+        `;
 
-        if (q) { // This is for search functionality
+        const queryParams = [sp_id, 'Approved', 'Pending', 'Created', true, 'Created'];
+        const countQueryParams = [sp_id, 'Approved', 'Pending', 'Created', true, 'Created'];
+
+        if (q) { // Search functionality
             queryText += `
-                AND (name ILIKE $${queryParams.length + 1} 
-                OR vehicle_number ILIKE $${queryParams.length + 1} 
-                OR vehicle_type ILIKE $${queryParams.length + 1} 
-                OR appointment_status ILIKE $${queryParams.length + 1})
+                AND (name ILIKE $7 
+                OR vehicle_number ILIKE $8 
+                OR vehicle_type ILIKE $9 
+                OR appointment_status ILIKE $10)
             `;
-            queryParams.push(`%${q}%`);
+            countQueryText += `
+                AND (name ILIKE $7 
+                OR vehicle_number ILIKE $8 
+                OR vehicle_type ILIKE $9 
+                OR appointment_status ILIKE $10)
+            `;
+            queryParams.push(`%${q}%`, `%${q}%`, `%${q}%`, `%${q}%`);
+            countQueryParams.push(`%${q}%`, `%${q}%`, `%${q}%`, `%${q}%`);
         }
 
-        // Add ORDER BY clause
-        queryText += ' ORDER BY appointment_id DESC';
-
-        // Add LIMIT and OFFSET
-        queryText += ' LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
+        // Add ORDER BY clause, LIMIT, and OFFSET
+        queryText += ' ORDER BY appointment_id DESC LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
         queryParams.push(_limit, offset);
 
-        const getall_employee = {
+        const getAllPendingAppointments = {
             text: queryText,
             values: queryParams,
         };
 
-        const data = await new Promise((resolve) => {
-            client.query(getall_employee, (err, result) => {
-                if (err) {
-                    console.error("Database query error:", err);
-                    return callback(true, "Unable to fetch the pending appointment details");
-                } else {
-                    const results = {
-                        results: result.rows
-                    };
-                    // console.log("Query results:", results);
-                    return callback(false, results);
-                }
-            });
-        });
+        const countAllPendingAppointments = {
+            text: countQueryText,
+            values: countQueryParams,
+        };
+
+        // Execute both queries concurrently
+        const [appointmentsResult, countResult] = await Promise.all([
+            new Promise((resolve, reject) => {
+                client.query(getAllPendingAppointments, (err, result) => {
+                    if (err) {
+                        return reject("Unable to fetch the pending appointment details");
+                    } else {
+                        resolve(result);
+                    }
+                });
+            }),
+            new Promise((resolve, reject) => {
+                client.query(countAllPendingAppointments, (err, result) => {
+                    if (err) {
+                        return reject("Unable to fetch the count of pending appointments");
+                    } else {
+                        resolve(result);
+                    }
+                });
+            })
+        ]);
+
+        const results = {
+            results: appointmentsResult.rows,
+            totalRecords: parseInt(countResult.rows[0].count, 10)
+        };
+
+        return callback(false, results);
+
     } catch (e) {
         console.error("Error:", e);
         return callback(true, e.message);
     }
 },
+
+
+  
 
 
   // Old Api Get All Pending Appointments
@@ -826,102 +905,177 @@ getAllAppointment: async (req, callback) => {
   },
 
 
-   getAllSpares : async (req, callback) => {
+  getAllSpares: async (req, callback) => {
     try {
-      const { sp_id, q, _page, _limit } = req.query;
-      let queryText = 'SELECT * FROM spares WHERE sp_id = $1 AND is_deleted = $2';
-  
-      const queryParams = [sp_id, false];
-      // console.log('ln 1284', queryText);
-  
-      // Calculate the OFFSET based on the _page and _limit parameters
-      const offset = (_page - 1) * _limit;
-  
-      if (q) { // This is for search functionality
-        queryText += `
-          AND (spare_name ILIKE $${queryParams.length + 1}
-          OR hsn_sac ILIKE $${queryParams.length + 2}
-          OR fuel_type ILIKE $${queryParams.length + 3})
-        `;
-        for (let i = 0; i < 3; i++) {
-          queryParams.push(`%${q}%`);
-        }
-      }
-  
-      // This is for pagination
-      // console.log("ln 1351",_limit, offset)
-  
-      // Always include ORDER BY clause
-      queryText += ' ORDER BY spare_id DESC LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
-      queryParams.push(_limit, offset);
-      // console.log("ln 1298", queryText, queryParams);
-  
-      const get_all_spares = {
-        text: queryText,
-        values: queryParams,
-      };
-  
-      const data = await new Promise((resolve) => {
-        client.query(get_all_spares, (err, result) => {
-          if (err) {
-            console.log(err);
-            return callback(true, "Unable to fetch the spare details");
-          } else {
-            const results = {
-              results: result.rows
-            };
-            return callback(false, results);
-          }
-        });
-      });
-    } catch (e) {
-      return callback(true, e.message);
-    }
-  },
-  
-  getAllLabour: async (req, callback) => {
-    try {
-      const { sp_id, q, _page, _limit } = req.query;
-      // console.log("ln 1330 q", q,_limit,_page)
-      let queryText = 'SELECT * FROM labour  WHERE sp_id = $1 AND is_deleted = $2'; 
-      const queryParams = [sp_id,false];
-
-        // Calculate the OFFSET based on the _page and _limit parameters
+        const { sp_id, q, _page, _limit } = req.query;
         const offset = (_page - 1) * _limit;
-        // console.log("ln 1390", offset )
-      if (q) { // This is for search functionality
-        queryText += ' AND (labour_name ILIKE $3 OR hsn_sac ILIKE $3)';
-        // console.log(queryText, "ln 1393")
-        queryParams.push(`%${q}%`);
-      }
-      // console.log("ln 1395", queryParams, queryText)
-      // This is for pagination
-      queryText += '  ORDER BY labour_id DESC LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
-      // console.log("ln 1399", queryParams, queryText)
-      queryParams.push(_limit, offset);
-      // console.log("ln 1401", queryParams, queryText)
-      const get_all_labours = {
-        text: queryText,
-        values: queryParams,
-      };
-  
-      const data = await new Promise((resolve) => {
-        client.query(get_all_labours, (err, result) => {
-          if (err) {
-            console.log(err);
-            return callback(true, "Unable to fetch the labour details");
-          } else {
-            const results = {
-              results: result.rows
-            };
-            return callback(false, results);
-          }
-        });
-      });
+
+        // Query to fetch the data
+        let queryText = `
+            SELECT * 
+            FROM spares 
+            WHERE sp_id = $1 AND is_deleted = $2
+        `;
+        // Query to count the total number of records
+        let countQueryText = `
+            SELECT COUNT(*) 
+            FROM spares 
+            WHERE sp_id = $1 AND is_deleted = $2
+        `;
+
+        const queryParams = [sp_id, false];
+        const countQueryParams = [sp_id, false]; // Separate params for count query
+
+        if (q) { // Search functionality
+            queryText += `
+                AND (spare_name ILIKE $3
+                OR hsn_sac ILIKE $4
+                OR fuel_type ILIKE $5)
+            `;
+            countQueryText += `
+                AND (spare_name ILIKE $3
+                OR hsn_sac ILIKE $4
+                OR fuel_type ILIKE $5)
+            `;
+            queryParams.push(`%${q}%`, `%${q}%`, `%${q}%`); // Add search params to queryParams
+            countQueryParams.push(`%${q}%`, `%${q}%`, `%${q}%`); // Add search params to countQueryParams
+        }
+
+        // Add ORDER BY clause, LIMIT, and OFFSET
+        queryText += ' ORDER BY spare_id DESC LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
+        queryParams.push(_limit, offset);
+
+        const getAllSpares = {
+            text: queryText,
+            values: queryParams,
+        };
+
+        const countAllSpares = {
+            text: countQueryText,
+            values: countQueryParams,
+        };
+
+        // Execute both queries concurrently
+        const [sparesResult, countResult] = await Promise.all([
+            new Promise((resolve, reject) => {
+                client.query(getAllSpares, (err, result) => {
+                    if (err) {
+                        return reject("Unable to fetch the spare details");
+                    } else {
+                        resolve(result);
+                    }
+                });
+            }),
+            new Promise((resolve, reject) => {
+                client.query(countAllSpares, (err, result) => {
+                    if (err) {
+                        return reject("Unable to fetch the count of spares");
+                    } else {
+                        resolve(result);
+                    }
+                });
+            })
+        ]);
+
+        const results = {
+            results: sparesResult.rows,
+            totalRecords: parseInt(countResult.rows[0].count, 10)
+        };
+
+        return callback(false, results);
+
     } catch (e) {
-      return callback(true, e.message);
+        console.error("Error:", e);
+        return callback(true, e.message);
     }
-  },
+},
+
+  
+  
+getAllLabour: async (req, callback) => {
+  try {
+      const { sp_id, q, _page, _limit } = req.query;
+      const offset = (_page - 1) * _limit;
+
+      // Query to fetch the data
+      let queryText = `
+          SELECT * 
+          FROM labour 
+          WHERE sp_id = $1 AND is_deleted = $2
+      `;
+      // Query to count the total number of records
+      let countQueryText = `
+          SELECT COUNT(*) 
+          FROM labour 
+          WHERE sp_id = $1 AND is_deleted = $2
+      `;
+
+      const queryParams = [sp_id, false];
+      const countQueryParams = [sp_id, false]; // Separate params for count query
+
+      if (q) { // Search functionality
+          queryText += `
+              AND (labour_name ILIKE $3
+              OR hsn_sac ILIKE $4)
+          `;
+          countQueryText += `
+              AND (labour_name ILIKE $3
+              OR hsn_sac ILIKE $4)
+          `;
+          queryParams.push(`%${q}%`, `%${q}%`); // Add search params
+          countQueryParams.push(`%${q}%`, `%${q}%`); // Add search params for count
+      }
+
+      // Add ORDER BY clause, LIMIT, and OFFSET
+      queryText += ' ORDER BY labour_id DESC LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
+      queryParams.push(_limit, offset);
+
+      const getAllLabour = {
+          text: queryText,
+          values: queryParams,
+      };
+
+      const countAllLabour = {
+          text: countQueryText,
+          values: countQueryParams,
+      };
+
+      // Execute both queries concurrently
+      const [labourResult, countResult] = await Promise.all([
+          new Promise((resolve, reject) => {
+              client.query(getAllLabour, (err, result) => {
+                  if (err) {
+                      return reject("Unable to fetch the labour details");
+                  } else {
+                      resolve(result);
+                  }
+              });
+          }),
+          new Promise((resolve, reject) => {
+              client.query(countAllLabour, (err, result) => {
+                  if (err) {
+                      return reject("Unable to fetch the count of labours");
+                  } else {
+                      resolve(result);
+                  }
+              });
+          })
+      ]);
+
+      const results = {
+          results: labourResult.rows,
+          totalRecords: parseInt(countResult.rows[0].count, 10)
+      };
+
+      return callback(false, results);
+
+  } catch (e) {
+      console.error("Error:", e);
+      return callback(true, e.message);
+  }
+},
+
+  
 
   deleteLabour: async (req, callback) => { // As per new inputs
     try {
@@ -1300,56 +1454,88 @@ getSpecificVechicleDetailsToCreateEstimate: async (req, callback) => {
 // New Api 
 getAllCreatedEstimateList: async (req, callback) => {
   try {
-      const { sp_id, q, _page, _limit } = req.query;
+    const { sp_id, q, _page, _limit } = req.query;
 
-      // Calculate the OFFSET based on the _page and _limit parameters
-      const offset = (_page - 1) * _limit;
+    // Calculate the OFFSET based on the _page and _limit parameters
+    const offset = (_page - 1) * _limit;
 
-      let queryText = `
-          SELECT * 
-          FROM appointment 
-          WHERE sp_id = $1 AND (estimate_status = $2)
+    // Query to fetch the estimates
+    let queryText = `
+      SELECT * 
+      FROM appointment 
+      WHERE sp_id = $1 AND estimate_status = $2
+    `;
+    
+    // Query to count the total number of records
+    const countQueryText = `
+      SELECT COUNT(*) 
+      FROM appointment 
+      WHERE sp_id = $1 AND estimate_status = $2
+    `;
+
+    const queryParams = [sp_id, 'Created'];
+    const countQueryParams = [sp_id, 'Created'];
+
+    if (q) { // This is for search functionality
+      queryText += `
+        AND vehicle_number ILIKE $${queryParams.length + 1}
       `;
-      const queryParams = [sp_id, 'Created'];
+      queryParams.push(`%${q}%`);
+    }
 
-      if (q) { // This is for search functionality
-          queryText += `
-              AND vehicle_number ILIKE $${queryParams.length + 1}
-          `;
-          queryParams.push(`%${q}%`);
-      }
+    // Add ORDER BY clause
+    queryText += ' ORDER BY appointment_id DESC';
 
-      // Add ORDER BY clause
-      queryText += ' ORDER BY appointment_id DESC';
+    // Add LIMIT and OFFSET
+    queryText += ' LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
+    queryParams.push(_limit, offset);
 
-      // Add LIMIT and OFFSET
-      queryText += ' LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
-      queryParams.push(_limit, offset);
+    // Define the queries
+    const get_estimates = {
+      text: queryText,
+      values: queryParams,
+    };
 
-      const get_estimate = {
-          text: queryText,
-          values: queryParams,
-      };
+    const count_estimates = {
+      text: countQueryText,
+      values: countQueryParams,
+    };
 
-      const data = await new Promise((resolve) => {
-          client.query(get_estimate, (err, result) => {
-              if (err) {
-                  console.error("Database query error:", err);
-                  return callback(true, "Unable to fetch the spare details");
-              } else {
-                  const results = {
-                      results: result.rows
-                  };
-                  // console.log("Query results:", results);
-                  return callback(false, results);
-              }
-          });
-      });
-  } catch (e) {
-      console.error("Error:", e);
-      return callback(true, e.message);
+    // Execute both queries concurrently
+    const [estimatesResult, countResult] = await Promise.all([
+      new Promise((resolve, reject) => {
+        client.query(get_estimates, (err, result) => {
+          if (err) {
+            return reject('Error retrieving created estimates');
+          } else {
+            resolve(result);
+          }
+        });
+      }),
+      new Promise((resolve, reject) => {
+        client.query(count_estimates, (err, result) => {
+          if (err) {
+            return reject('Error retrieving count of created estimates');
+          } else {
+            resolve(result);
+          }
+        });
+      })
+    ]);
+
+    const results = {
+      results: estimatesResult.rows,
+      totalRecords: parseInt(countResult.rows[0].count, 10)
+    };
+
+    return callback(false, results);
+
+  } catch (error) {
+    console.error("Error:", error);
+    return callback(true, error.message);
   }
 },
+
 
 
 // Old Api
@@ -1418,47 +1604,83 @@ addEmployeeRole:async (req, callback) => {
 
 getAllEmployeeRoles: async (req, callback) => {
   try {
-    const { sp_id, q, _page, _limit } = req.query;
-    // console.log("ln 1330 q", q,_limit,_page)
-    let queryText = 'SELECT role_id,role_name,permission_granted FROM employee_roles  WHERE sp_id = $1 AND is_deleted = $2'; 
-    const queryParams = [sp_id,false];
-
+      const { sp_id, q, _page, _limit } = req.query;
       // Calculate the OFFSET based on the _page and _limit parameters
       const offset = (_page - 1) * _limit;
-      // console.log("ln 1390", offset )
-    if (q) { // This is for search functionality
-      queryText += ' AND (role_name ILIKE $3)';
-      // console.log(queryText, "ln 1393")
-      queryParams.push(`%${q}%`);
-    }
-    // console.log("ln 1395", queryParams, queryText)
-    // This is for pagination
-    queryText += ' ORDER BY role_id DESC LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
-    // console.log("ln 1399", queryParams, queryText)
-    queryParams.push(_limit, offset);
-    // console.log("ln 1401", queryParams, queryText)
-    const get_all_roles = {
-      text: queryText,
-      values: queryParams,
-    };
 
-    const data = await new Promise((resolve) => {
-      client.query(get_all_roles, (err, result) => {
-        if (err) {
-          console.log(err);
-          return callback(true, "Unable to fetch the role details");
-        } else {
-          const results = {
-            results: result.rows
-          };
-          return callback(false, results);
-        }
-      });
-    });
+      // Query to fetch the data
+      let queryText = `
+          SELECT role_id, role_name, permission_granted 
+          FROM employee_roles  
+          WHERE sp_id = $1 AND is_deleted = $2
+      `;
+      // Query to count the total number of records
+      let countQueryText = `
+          SELECT COUNT(*) 
+          FROM employee_roles 
+          WHERE sp_id = $1 AND is_deleted = $2
+      `;
+
+      const queryParams = [sp_id, false];
+      let countQueryParams = [sp_id, false];
+
+      if (q) { // Search functionality
+          queryText += ' AND role_name ILIKE $3';
+          countQueryText += ' AND role_name ILIKE $3';
+          queryParams.push(`%${q}%`);
+          countQueryParams.push(`%${q}%`);
+      }
+
+      // Add ORDER BY clause, LIMIT, and OFFSET
+      queryText += ' ORDER BY role_id DESC LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
+      queryParams.push(_limit, offset);
+
+      const getRoles = {
+          text: queryText,
+          values: queryParams,
+      };
+
+      const countRoles = {
+          text: countQueryText,
+          values: countQueryParams,
+      };
+
+      // Execute both queries concurrently
+      const [rolesResult, countResult] = await Promise.all([
+          new Promise((resolve, reject) => {
+              client.query(getRoles, (err, result) => {
+                  if (err) {
+                      return reject('Unable to fetch the role details');
+                  } else {
+                      resolve(result);
+                  }
+              });
+          }),
+          new Promise((resolve, reject) => {
+              client.query(countRoles, (err, result) => {
+                  if (err) {
+                      return reject('Unable to fetch the count of roles');
+                  } else {
+                      resolve(result);
+                  }
+              });
+          })
+      ]);
+
+      const results = {
+          results: rolesResult.rows,
+          totalRecords: parseInt(countResult.rows[0].count, 10)
+      };
+
+      return callback(false, results);
+
   } catch (e) {
-    return callback(true, e.message);
+      console.error("Error:", e);
+      return callback(true, e.message);
   }
 },
+
+
 
 getAllPermissionPerRoles: async (req, callback) => {
   try {
@@ -1615,56 +1837,88 @@ editEmployeeRole: async (req, callback) => { // As per new inputs
 // New Api 
 getAllCreatedJobcardList: async (req, callback) => {
   try {
-      const { sp_id, q, _page, _limit } = req.query;
+    const { sp_id, q, _page, _limit } = req.query;
 
-      // Calculate the OFFSET based on the _page and _limit parameters
-      const offset = (_page - 1) * _limit;
+    // Calculate the OFFSET based on the _page and _limit parameters
+    const offset = (_page - 1) * _limit;
 
-      let queryText = `
-          SELECT * 
-          FROM appointment 
-          WHERE sp_id = $1 AND jobcard_status = $2 AND (payment_status <> $3 OR payment_status IS NULL)
+    // Query to fetch the job cards
+    let queryText = `
+      SELECT * 
+      FROM appointment 
+      WHERE sp_id = $1 AND jobcard_status = $2 AND (payment_status <> $3 OR payment_status IS NULL)
+    `;
+    
+    // Query to count the total number of records
+    const countQueryText = `
+      SELECT COUNT(*) 
+      FROM appointment 
+      WHERE sp_id = $1 AND jobcard_status = $2 AND (payment_status <> $3 OR payment_status IS NULL)
+    `;
+
+    const queryParams = [sp_id, 'Created', 'Received'];
+    const countQueryParams = [sp_id, 'Created', 'Received'];
+
+    if (q) { // This is for search functionality
+      queryText += `
+        AND vehicle_number ILIKE $${queryParams.length + 1}
       `;
-      const queryParams = [sp_id, 'Created', 'Received'];
+      queryParams.push(`%${q}%`);
+    }
 
-      if (q) { // This is for search functionality
-          queryText += `
-              AND vehicle_number ILIKE $${queryParams.length + 1}
-          `;
-          queryParams.push(`%${q}%`);
-      }
+    // Add ORDER BY clause
+    queryText += ' ORDER BY appointment_id DESC';
 
-      // Add ORDER BY clause
-      queryText += ' ORDER BY appointment_id DESC';
+    // Add LIMIT and OFFSET
+    queryText += ' LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
+    queryParams.push(_limit, offset);
 
-      // Add LIMIT and OFFSET
-      queryText += ' LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
-      queryParams.push(_limit, offset);
+    // Define the queries
+    const get_jobcard_list = {
+      text: queryText,
+      values: queryParams,
+    };
 
-      const get_jobcard_list = {
-          text: queryText,
-          values: queryParams,
-      };
+    const count_jobcard_list = {
+      text: countQueryText,
+      values: countQueryParams,
+    };
 
-      const data = await new Promise((resolve) => {
-          client.query(get_jobcard_list, (err, result) => {
-              if (err) {
-                  console.error("Database query error:", err);
-                  return callback(true, "Unable to fetch the jobcard details");
-              } else {
-                  const results = {
-                      results: result.rows
-                  };
-                  // console.log("Query results:", results);
-                  return callback(false, results);
-              }
-          });
-      });
-  } catch (e) {
-      console.error("Error:", e);
-      return callback(true, e.message);
+    // Execute both queries concurrently
+    const [jobcardsResult, countResult] = await Promise.all([
+      new Promise((resolve, reject) => {
+        client.query(get_jobcard_list, (err, result) => {
+          if (err) {
+            return reject('Error retrieving jobcard details');
+          } else {
+            resolve(result);
+          }
+        });
+      }),
+      new Promise((resolve, reject) => {
+        client.query(count_jobcard_list, (err, result) => {
+          if (err) {
+            return reject('Error retrieving count of jobcards');
+          } else {
+            resolve(result);
+          }
+        });
+      })
+    ]);
+
+    const results = {
+      results: jobcardsResult.rows,
+      totalRecords: parseInt(countResult.rows[0].count, 10)
+    };
+
+    return callback(false, results);
+
+  } catch (error) {
+    console.error("Error:", error);
+    return callback(true, error.message);
   }
 },
+
 
 
 
@@ -1735,8 +1989,7 @@ getJobcardDetails : async (req, callback) => {
       // Prepare and structure the retrieved data
       const data = {
           spares: spareResult.rows,
-          labours: labourResult.rows,
-       
+          labours: labourResult.rows,       
       };
 
       // console.log('Job Card details retrieved successfully!', data);
@@ -1972,18 +2225,31 @@ updateJobcard : async (req, callback) => {
         // Calculate the OFFSET based on the _page and _limit parameters
         const offset = (_page - 1) * _limit;
 
+        // Query to fetch pending payment invoices
         let queryText = `
             SELECT * 
             FROM appointment 
             WHERE sp_id = $1 AND payment_status = $2
         `;
-        const queryParams = [sp_id, 'Pending'];
+        let queryParams = [sp_id, 'Pending'];
+
+        // Query to count the total number of pending payment invoices
+        let countQueryText = `
+            SELECT COUNT(*) 
+            FROM appointment 
+            WHERE sp_id = $1 AND payment_status = $2
+        `;
+        let countQueryParams = [sp_id, 'Pending'];
 
         if (q) { // This is for search functionality
             queryText += `
                 AND vehicle_number ILIKE $${queryParams.length + 1}
             `;
+            countQueryText += `
+                AND vehicle_number ILIKE $${countQueryParams.length + 1}
+            `;
             queryParams.push(`%${q}%`);
+            countQueryParams.push(`%${q}%`);
         }
 
         // Add ORDER BY clause
@@ -1993,30 +2259,39 @@ updateJobcard : async (req, callback) => {
         queryText += ' LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
         queryParams.push(_limit, offset);
 
+        // Define the queries
         const get_pending_payment_list = {
             text: queryText,
             values: queryParams,
         };
 
-        const data = await new Promise((resolve) => {
-            client.query(get_pending_payment_list, (err, result) => {
-                if (err) {
-                    console.error("Database query error:", err);
-                    return callback(true, "Unable to fetch the jobcard details");
-                } else {
-                    const results = {
-                        results: result.rows
-                    };
-                    // console.log("Query results:", results);
-                    return callback(false, results);
-                }
-            });
-        });
-    } catch (e) {
-        console.error("Error:", e);
-        return callback(true, e.message);
+        const count_pending_payment_invoices = {
+            text: countQueryText,
+            values: countQueryParams,
+        };
+
+        // Execute both queries concurrently
+        const [pendingPaymentInvoicesResult, countResult] = await Promise.all([
+            client.query(get_pending_payment_list),
+            client.query(count_pending_payment_invoices)
+        ]);
+
+        const results = {
+            results: pendingPaymentInvoicesResult.rows,
+            totalRecords: parseInt(countResult.rows[0].count, 10)
+        };
+
+        return callback(false, results);
+
+    } catch (error) {
+        console.error("Error:", error);
+        return callback(true, "Error retrieving pending payment invoices");
     }
 },
+
+
+
+
 
 
 
@@ -2060,58 +2335,76 @@ updateJobcard : async (req, callback) => {
   // },
 
 // New Api
-  getAllPaidInvoices: async (req, callback) => {
-    try {
-        const { sp_id, q, _page, _limit } = req.query;
+getAllPaidInvoices: async (req, callback) => {
+  try {
+      const { sp_id, q, _page, _limit } = req.query;
 
-        // Calculate the OFFSET based on the _page and _limit parameters
-        const offset = (_page - 1) * _limit;
+      // Calculate the OFFSET based on the _page and _limit parameters
+      const offset = (_page - 1) * _limit;
 
-        let queryText = `
-            SELECT * 
-            FROM appointment 
-            WHERE sp_id = $1 AND payment_status = $2
-        `;
-        const queryParams = [sp_id, 'Received'];
+      // Query to fetch paid invoices
+      let queryText = `
+          SELECT * 
+          FROM appointment 
+          WHERE sp_id = $1 AND payment_status = $2
+      `;
+      
+      // Query to count the total number of paid invoices
+      const countQueryText = `
+          SELECT COUNT(*) 
+          FROM appointment 
+          WHERE sp_id = $1 AND payment_status = $2
+      `;
 
-        if (q) { // This is for search functionality
-            queryText += `
-                AND (vehicle_number ILIKE $${queryParams.length + 1} OR name ILIKE $${queryParams.length + 1})
-            `;
-            queryParams.push(`%${q}%`);
-        }
+      const queryParams = [sp_id, 'Received'];
+      const countQueryParams = [sp_id, 'Received'];
 
-        // Add ORDER BY clause
-        queryText += ' ORDER BY appointment_id DESC';
+      if (q) { // This is for search functionality
+          queryText += `
+              AND (vehicle_number ILIKE $${queryParams.length + 1} OR name ILIKE $${queryParams.length + 1})
+          `;
+          queryParams.push(`%${q}%`);
+      }
 
-        // Add LIMIT and OFFSET
-        queryText += ' LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
-        queryParams.push(_limit, offset);
+      // Add ORDER BY clause
+      queryText += ' ORDER BY appointment_id DESC';
 
-        const get_paid_invoices = {
-            text: queryText,
-            values: queryParams,
-        };
+      // Add LIMIT and OFFSET
+      queryText += ' LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
+      queryParams.push(_limit, offset);
 
-        const data = await new Promise((resolve) => {
-            client.query(get_paid_invoices, (err, result) => {
-                if (err) {
-                    console.error("Database query error:", err);
-                    return callback(true, "Unable to fetch the Invoice details");
-                } else {
-                    const results = {
-                        results: result.rows
-                    };
-                    // console.log("Query results:", results);
-                    return callback(false, results);
-                }
-            });
-        });
-    } catch (e) {
-        console.error("Error:", e);
-        return callback(true, e.message);
-    }
+      // Define the queries
+      const get_paid_invoices = {
+          text: queryText,
+          values: queryParams,
+      };
+
+      const count_paid_invoices = {
+          text: countQueryText,
+          values: countQueryParams,
+      };
+
+      // Execute both queries concurrently
+      const [paidInvoicesResult, countResult] = await Promise.all([
+          client.query(get_paid_invoices),
+          client.query(count_paid_invoices)
+      ]);
+
+      const results = {
+          results: paidInvoicesResult.rows,
+          totalRecords: parseInt(countResult.rows[0].count, 10)
+      };
+
+      return callback(false, results);
+
+  } catch (error) {
+      console.error("Error:", error);
+      return callback(true, "Error retrieving paid invoices");
+  }
 },
+
+
+
 
 
 
