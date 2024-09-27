@@ -1,16 +1,6 @@
 const {Client} = require('pg');
 const multer = require('multer');
 const client = require('../../database/database')
-// Old DB connection starts
-// const client =  new Client ({
-//     host: "localhost",
-//     port: 5432,  
-//     user: "postgres",
-//     password: "Ertiga@2324",
-//     database: "avah"
-// })
-// client.connect ();
-// Old DB connection ends
 
 module.exports = {
 

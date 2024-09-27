@@ -3,18 +3,6 @@
 const client = require('../../database/database')
 const fs = require('fs');
 
-// Old DB connection starts
-// const {Client} = require('pg');
-// const client =  new Client ({
-//     host: "localhost",
-//     port: 5432,  
-//     user: "postgres",
-//     password: "Ertiga@2324",
-//     database: "avah"
-// })
-// client.connect ();
-// Old DB connection Ends
-
 const addEstimateEntry = async (data, type, estimateNumber,sp_id,appointment_id) => {
   try {
     // console.log(" ln 16 sp_id", sp_id, data)

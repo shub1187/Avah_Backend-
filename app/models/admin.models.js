@@ -3,21 +3,6 @@
 
 const client = require('../../database/database')
 
-// Old DB connect start
-// const {Client} = require('pg');
-
-// const client =  new Client ({
-//     host: "localhost",
-//     port: 5432,  
-//     user: "postgres",
-//     password: "Ertiga@2324",
-//     database: "avah"
-// })
-// client.connect ();
-
-//Old DB connect ends
-
-// client.connect();
 module.exports = {
 
   
