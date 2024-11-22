@@ -1421,16 +1421,101 @@ module.exports = {
   },
 
 
-// New Api working for both admin and customer page
+// Old  Api working for both admin and customer page
+// getAllFuelTypes: async (req, callback) => {
+//   try {
+//     // Validate and set default values for pagination
+//     const _page = parseInt(req.query._page, 10) || 1;
+//     const _limit = parseInt(req.query._limit, 10) || 10;
+//     const q = req.query.q || '';
+
+//     // Calculate the OFFSET based on the _page and _limit parameters
+//     const offset = (_page - 1) * _limit;
+
+//     let queryText = `
+//         SELECT * 
+//         FROM fuels
+//     `;
+//     let countQueryText = `
+//         SELECT COUNT(*) 
+//         FROM fuels
+//     `;
+//     const queryParams = [];
+
+//     if (q) { // This is for search functionality
+//       queryText += `
+//           WHERE fuel_name ILIKE $1
+//       `;
+//       countQueryText += `
+//           WHERE fuel_name ILIKE $1
+//       `;
+//       queryParams.push(`%${q}%`);
+//     }
+
+//     // Add ORDER BY clause
+//     queryText += ' ORDER BY fuel_id DESC';
+
+//     // Add LIMIT and OFFSET
+//     queryText += ' LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
+//     queryParams.push(_limit, offset);
+
+//     const getall_fuel_type = {
+//       text: queryText,
+//       values: queryParams,
+//     };
+
+//     const count_all_fuel_types = {
+//       text: countQueryText,
+//       values: queryParams.slice(0, -2),  // Exclude LIMIT and OFFSET
+//     };
+
+//     const [result, countResult] = await Promise.all([
+//       new Promise((resolve) => {
+//         client.query(getall_fuel_type, (err, result) => {
+//           if (err) {
+//             console.error("Database query error:", err);
+//             return callback(true, "Unable to fetch the fuel types");
+//           } else {
+//             resolve(result);
+//           }
+//         });
+//       }),
+//       new Promise((resolve) => {
+//         client.query(count_all_fuel_types, (err, result) => {
+//           if (err) {
+//             console.error("Database query error:", err);
+//             return callback(true, "Unable to fetch the count of fuel types");
+//           } else {
+//             resolve(result);
+//           }
+//         });
+//       })
+//     ]);
+
+//     const results = {
+//       results: result.rows,
+//       totalRecords: parseInt(countResult.rows[0].count, 10)
+//     };
+
+//     return callback(false, results);
+
+//   } catch (e) {
+//     console.error("Error:", e);
+//     return callback(true, e.message);
+//   }
+// },
+
+// New Api that works for dropdown and page 
+
 getAllFuelTypes: async (req, callback) => {
   try {
-    // Validate and set default values for pagination
-    const _page = parseInt(req.query._page, 10) || 1;
-    const _limit = parseInt(req.query._limit, 10) || 10;
+    // Extract query parameters
+    const _page = parseInt(req.query._page, 10);
+    const _limit = parseInt(req.query._limit, 10);
     const q = req.query.q || '';
 
-    // Calculate the OFFSET based on the _page and _limit parameters
-    const offset = (_page - 1) * _limit;
+    // Check if pagination parameters are provided
+    const isPaginated = _page && _limit;
 
     let queryText = `
         SELECT * 
@@ -1455,9 +1540,12 @@ getAllFuelTypes: async (req, callback) => {
     // Add ORDER BY clause
     queryText += ' ORDER BY fuel_id DESC';
 
-    // Add LIMIT and OFFSET
-    queryText += ' LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
-    queryParams.push(_limit, offset);
+    // Add LIMIT and OFFSET if pagination is enabled
+    if (isPaginated) {
+      const offset = (_page - 1) * _limit;
+      queryText += ' LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
+      queryParams.push(_limit, offset);
+    }
 
     const getall_fuel_type = {
       text: queryText,
@@ -1466,7 +1554,7 @@ getAllFuelTypes: async (req, callback) => {
 
     const count_all_fuel_types = {
       text: countQueryText,
-      values: queryParams.slice(0, -2),  // Exclude LIMIT and OFFSET
+      values: queryParams.slice(0, isPaginated ? -2 : undefined), // Exclude LIMIT and OFFSET if present
     };
 
     const [result, countResult] = await Promise.all([
@@ -1494,16 +1582,16 @@ getAllFuelTypes: async (req, callback) => {
 
     const results = {
       results: result.rows,
-      totalRecords: parseInt(countResult.rows[0].count, 10)
+      totalRecords: parseInt(countResult.rows[0].count, 10),
     };
 
     return callback(false, results);
-
   } catch (e) {
     console.error("Error:", e);
     return callback(true, e.message);
   }
 },
+
 
 
 

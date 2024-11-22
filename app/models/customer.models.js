@@ -91,61 +91,140 @@ module.exports = {
       
 
 // Vehcile addition by customer into his account but this api will give error if customer has not completed its profile. Because personal details will have null value
-      vehicleRegistration: async (req, callback) => {
-        try {
-          var body = req.body;
-          // console.log(" ln 98", body )
-          // First, fetch the customer_id based on name and email
-          const customerQuery = 'SELECT customer_id,name,email,full_address,mobile_number FROM customer_registration WHERE email = $1';
-          const customerValues = [body.email];
+      // vehicleRegistration: async (req, callback) => {
+      //   try {
+      //     var body = req.body;
+      //     // console.log(" ln 98", body )
+      //     // First, fetch the customer_id based on name and email
+      //     const customerQuery = 'SELECT customer_id,name,email,full_address,mobile_number FROM customer_registration WHERE email = $1';
+      //     const customerValues = [body.email];
       
-          const customerResult = await new Promise((resolve) => {
-            client.query(customerQuery, customerValues, (err, result) => {
-              if (err) {
-                return callback(true, 'Customer not found');
-              }
+      //     const customerResult = await new Promise((resolve) => {
+      //       client.query(customerQuery, customerValues, (err, result) => {
+      //         if (err) {
+      //           return callback(true, 'Customer not found');
+      //         }
       
-              if (result.rows.length === 0) {
-                return callback(true, 'Customer not found');
-              }
+      //         if (result.rows.length === 0) {
+      //           return callback(true, 'Customer not found');
+      //         }
       
-              // Extract the customer_id from the query result
-              const customer_id = result.rows[0].customer_id; // Need to deal with null error if customer has not completed his profile completion
-              const email = result.rows[0].email;
-              const full_address = result.rows[0].full_address;
-              const mobile_number = result.rows[0].mobile_number;
-              // console.log("ln 115 vehcileRegisteration api cust_id is : ", result.rows[0])
-              const name = result.rows[0].name;
+      //         // Extract the customer_id from the query result
+      //         const customer_id = result.rows[0].customer_id; // Need to deal with null error if customer has not completed his profile completion
+      //         const email = result.rows[0].email;
+      //         const full_address = result.rows[0].full_address;
+      //         const mobile_number = result.rows[0].mobile_number;
+      //         // console.log("ln 115 vehcileRegisteration api cust_id is : ", result.rows[0])
+      //         const name = result.rows[0].name;
       
-              // Now, insert vehicle details using the fetched customer_id
-              const vehicleQuery = 'INSERT INTO customer_vehicle_data (customer_id, vehicle_number, vehicle_type, brand, model, customization, fuel_type, chassis_number,name,full_address,email,mobile_number) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *';
-              const vehicleValues = [customer_id, body.vehicle_number, body.vehicle_type, body.brand, body.model, body.customization, body.fuel_type, body.chassis_number,name,full_address,email,mobile_number];
-              client.query(vehicleQuery, vehicleValues, (err, result) => {
-                if (err) {
-                  // console.log('ln 132', err)
-                  if (err.code === '23505') {
-                    return callback(true, `${name}, vehicle registration failed because the vehicle with vehicle number  ${body.vehicle_number} has already been registered`);
-                  } else {
-                    // console.log("ln 126" , err.message)
-                    return callback(true, 'Vehicle registration failed');
-                  }
-                }
+      //         // Now, insert vehicle details using the fetched customer_id
+      //         const vehicleQuery = 'INSERT INTO customer_vehicle_data (customer_id, vehicle_number, vehicle_type, brand, model, customization, fuel_type, chassis_number,name,full_address,email,mobile_number) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *';
+      //         const vehicleValues = [customer_id, body.vehicle_number, body.vehicle_type, body.brand, body.model, body.customization, body.fuel_type, body.chassis_number,name,full_address,email,mobile_number];
+      //         client.query(vehicleQuery, vehicleValues, (err, result) => {
+      //           if (err) {
+      //             // console.log('ln 132', err)
+      //             if (err.code === '23505') {
+      //               return callback(true, `${name}, vehicle registration failed because the vehicle with vehicle number  ${body.vehicle_number} has already been registered`);
+      //             } else {
+      //               // console.log("ln 126" , err.message)
+      //               return callback(true, 'Vehicle registration failed');
+      //             }
+      //           }
       
-                // console.log('Vehicle registered successfully!');
-                // console.log("ln 132",result)
-                var data = {
-                  vehicle_number :  result.rows[0].vehicle_number,
-                  customer_name : name
-                }
-                // console.log(data)
-                return callback(false, data);
-              });
-            });
-          });
-        } catch (error) {
-          return callback(true, error.message);
+      //           // console.log('Vehicle registered successfully!');
+      //           // console.log("ln 132",result)
+      //           var data = {
+      //             vehicle_number :  result.rows[0].vehicle_number,
+      //             customer_name : name
+      //           }
+      //           // console.log(data)
+      //           return callback(false, data);
+      //         });
+      //       });
+      //     });
+      //   } catch (error) {
+      //     return callback(true, error.message);
+      //   }
+      // },
+
+// New api that will throww error if customer profile is incomplete and he is trying to register the vehicle
+
+vehicleRegistration: async (req, callback) => {
+  try {
+    const body = req.body;
+
+    // Fetch the customer details based on email
+    const customerQuery = `
+      SELECT customer_id, name, email, full_address, mobile_number 
+      FROM customer_registration 
+      WHERE email = $1
+    `;
+    const customerValues = [body.email];
+
+    const customerResult = await new Promise((resolve) => {
+      client.query(customerQuery, customerValues, (err, result) => {
+        if (err) {
+          return callback(true, 'Error fetching customer details.');
         }
-      },
+
+        if (result.rows.length === 0) {
+          return callback(true, 'Customer not found.');
+        }
+
+        resolve(result.rows[0]);
+      });
+    });
+
+    const { customer_id, name, email, full_address, mobile_number } = customerResult;
+
+    // Check if the customer's profile is complete
+    if (!full_address || !mobile_number) {
+      return callback(
+        true,
+        'Profile completion is required to register a vehicle. Please update your profile with a valid address and mobile number.'
+      );
+    }
+
+    // Proceed with vehicle registration
+    const vehicleQuery = `
+      INSERT INTO customer_vehicle_data (
+        customer_id, vehicle_number, vehicle_type, brand, model, customization, fuel_type, chassis_number, 
+        name, full_address, email, mobile_number
+      ) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) 
+      RETURNING *
+    `;
+    const vehicleValues = [
+      customer_id, body.vehicle_number, body.vehicle_type, body.brand, body.model, body.customization, 
+      body.fuel_type, body.chassis_number, name, full_address, email, mobile_number
+    ];
+
+    client.query(vehicleQuery, vehicleValues, (err, result) => {
+      if (err) {
+        if (err.code === '23505') {
+          return callback(
+            true,
+            `${name}, vehicle registration failed as the vehicle number ${body.vehicle_number} or chassis number is already registered.`
+          );
+        } else {
+          return callback(true, 'Vehicle registration failed.');
+        }
+      }
+
+      // Successful registration
+      const data = {
+        vehicle_number: result.rows[0].vehicle_number,
+        customer_name: name,
+      };
+
+      return callback(false, data);
+    });
+  } catch (error) {
+    // Return error using callback
+    return callback(true, error.message);
+  }
+},
+
 
       // vehicle_search for creating appointment
       vehicle_search: async (req, callback) => {
