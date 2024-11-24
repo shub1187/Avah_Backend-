@@ -29,7 +29,7 @@ const addJobcardEntry = async (data, type, jobcardNumber,sp_id,appointment_id) =
 
       const result = await client.query(query, values);
 
-      console.log(`${type} entry added to the system successfully!`, result.rows);
+      // console.log(`${type} entry added to the system successfully!`, result.rows);
       return result.rows; // Resolve with the inserted data
   } catch (error) {
       console.error(`Error in adding ${type} entry:`, error);
@@ -2087,7 +2087,13 @@ updateJobcard : async (req, callback) => {
       var body = req.body;
       // console.log("ln 1258", body);
       const { sp_id, appointment_id, jobcard_number, estimate_number, bill_amount, vehicle_number, invoice_generated_by } = req.body;
-  
+       // Mark existing invoices as obsolete of no use / this is case when we generate invoice multiple time even after sending it to customer last minute changes
+          const obsoleteQuery = `
+          UPDATE invoice 
+          SET payment_status = 'Obsolete'
+          WHERE appointment_id = $1 AND jobcard_number = $2 AND payment_status = 'Pending'`;
+        const obsoleteValues = [appointment_id, jobcard_number];
+        await client.query(obsoleteQuery, obsoleteValues);
       // Generate or retrieve the sequence number
       const sequenceName = 'invoice_number_seq'; // Replace with your sequence name
       const { rows } = await client.query(`SELECT nextval('${sequenceName}')`);
