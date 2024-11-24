@@ -529,9 +529,8 @@ getAllFuelTypeAutoFill: (req,res)=>{
       else
         res.send({
           error: false,
-          message: "Updated the status of service provider successfully",
-          data: results,
-        });
+          message: "Updated the status of service provider successfully"
+             });
     });
   },
 

@@ -626,8 +626,8 @@ module.exports = {
   updateServiceProviderActive: async (req, callback) => {
     try {
       const update_query = {
-        text: 'UPDATE approved_service_providers SET sp_status = $1 WHERE email = $2',
-        values: [req.body.sp_status, req.body.email]
+        text: 'UPDATE approved_service_providers SET sp_status = $1 WHERE sp_id = $2',
+        values: [req.body.sp_status, req.body.sp_id]
       };
       const data = await new Promise((resolve)=>{
        client.query(
@@ -637,7 +637,7 @@ module.exports = {
               return callback(false,"Updated service provider Status successfully")
             }
             else{
-              return callback(true,"Unable to update the status user not found")
+              return callback(true,"Unable to update the status service provider not found")
             }
         }) 
       })
