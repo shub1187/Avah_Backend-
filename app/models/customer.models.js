@@ -565,70 +565,129 @@ vehicleRegistration: async (req, callback) => {
       },
       // Test - 04
 
+      // Old Code
+      // getAllSpDetailsAsPerCustomerCity: async (req, callback) => {
+      //   try {
+      //     const queryForCities =
+      //       'SELECT DISTINCT city, state FROM approved_service_providers WHERE city IS NOT NULL AND state IS NOT NULL';
+      
+      //     const cityStateData = await new Promise((resolve) => {
+      //       client.query(queryForCities, (err, result) => {
+      //         if (err) {
+      //           return callback(true, 'Error fetching cities and states');
+      //         } else if (result.rows.length > 0) {
+      //           return resolve(result.rows);
+      //         } else {
+      //           return callback(true, 'No cities and states found in the database');
+      //         }
+      //       });
+      //     });
+      
+      //     const resulte = {};
+      
+      //     for (const { city, state } of cityStateData) {
+      //       const queryForServiceProviders =
+      //         'SELECT sp_id, business_name, business_address,business_contact,serviced_brands FROM approved_service_providers WHERE city = $1 AND state = $2 AND sp_status <> $3';
+      //       const values = [city, state, 'Inactive'];
+      
+      //       const serviceProviderData = await new Promise((resolve) => {
+      //         client.query(queryForServiceProviders, values, (err, result) => {
+      //           if (err) {
+      //             return callback(
+      //               true,
+      //               `Error fetching service providers for ${city}, ${state}`
+      //             );
+      //           } else if (result.rows.length > 0) {
+      //             const location = `${city} (${state})`;
+      //             resulte[location] = result.rows.map((row) => ({
+      //               sp_id: row.sp_id,
+      //               label: row.business_name,
+      //               value: row.business_name,
+      //               address: row.business_address,
+      //               sp_mobile : row.business_contact,
+      //               brands_serviced : row.serviced_brands
+      //             }));
+      //             resolve();
+      //           }
+      //         });
+      //       });
+      //     }
+      
+      //     if (Object.keys(resulte).length > 0) {
+      //       return callback(false,  resulte );
+      //     } else {
+      //       return callback(true, 'No active service providers found in the database');
+      //     }
+      //   } catch (error) {
+      //     return callback(true, error.message);
+      //   }
+      // },
+      
+      
+      
+      
+      
+      // New Code 
       getAllSpDetailsAsPerCustomerCity: async (req, callback) => {
         try {
-          const queryForCities =
-            'SELECT DISTINCT city, state FROM approved_service_providers WHERE city IS NOT NULL AND state IS NOT NULL';
-      
-          const cityStateData = await new Promise((resolve) => {
-            client.query(queryForCities, (err, result) => {
-              if (err) {
-                return callback(true, 'Error fetching cities and states');
-              } else if (result.rows.length > 0) {
-                return resolve(result.rows);
-              } else {
-                return callback(true, 'No cities and states found in the database');
-              }
+            // console.log('ln 571 Entered getAllSpDetailsAsPerCustomerCity');
+            const queryForCities =
+                'SELECT DISTINCT city, state FROM approved_service_providers WHERE city IS NOT NULL AND state IS NOT NULL';
+    
+            const cityStateData = await new Promise((resolve, reject) => {
+                client.query(queryForCities, (err, result) => {
+                    if (err) {
+                        return reject('Error fetching cities and states');
+                    } else if (result.rows.length > 0) {
+                        // console.log('ln 580 cityStateData');
+                        resolve(result.rows);
+                    } else {
+                        reject('No cities and states found in the database');
+                    }
+                });
             });
-          });
-      
-          const resulte = {};
-      
-          for (const { city, state } of cityStateData) {
-            const queryForServiceProviders =
-              'SELECT sp_id, business_name, business_address,business_contact,serviced_brands FROM approved_service_providers WHERE city = $1 AND state = $2 AND sp_status <> $3';
-            const values = [city, state, 'Inactive'];
-      
-            const serviceProviderData = await new Promise((resolve) => {
-              client.query(queryForServiceProviders, values, (err, result) => {
-                if (err) {
-                  return callback(
-                    true,
-                    `Error fetching service providers for ${city}, ${state}`
-                  );
-                } else if (result.rows.length > 0) {
-                  const location = `${city} (${state})`;
-                  resulte[location] = result.rows.map((row) => ({
-                    sp_id: row.sp_id,
-                    label: row.business_name,
-                    value: row.business_name,
-                    address: row.business_address,
-                    sp_mobile : row.business_contact,
-                    brands_serviced : row.serviced_brands
-                  }));
-                  resolve();
-                }
-              });
-            });
-          }
-      
-          if (Object.keys(resulte).length > 0) {
-            return callback(false,  resulte );
-          } else {
-            return callback(true, 'No active service providers found in the database');
-          }
+    
+            const resulte = {};
+            // console.log('ln 589 cityStateData', cityStateData);
+    
+            await Promise.all(cityStateData.map(async ({ city, state }) => {
+                const queryForServiceProviders =
+                    'SELECT sp_id, business_name, business_address, business_contact, serviced_brands FROM approved_service_providers WHERE city = $1 AND state = $2 AND sp_status <> $3';
+                const values = [city, state, 'Inactive'];
+    
+                const serviceProviderData = await new Promise((resolve, reject) => {
+                    client.query(queryForServiceProviders, values, (err, result) => {
+                        if (err) {
+                            reject(`Error fetching service providers for ${city}, ${state}`);
+                        } else if (result.rows.length > 0) {
+                            // console.log('ln 603 Entered else if');
+                            const location = `${city} (${state})`;
+                            resulte[location] = result.rows.map((row) => ({
+                                sp_id: row.sp_id,
+                                label: row.business_name,
+                                value: row.business_name,
+                                address: row.business_address,
+                                sp_mobile: row.business_contact,
+                                brands_serviced: row.serviced_brands
+                            }));
+                            resolve();
+                        } else {
+                            resolve(); // No data, but don't fail the Promise
+                        }
+                    });
+                });
+            }));
+    
+            if (Object.keys(resulte).length > 0) {
+                // console.log('ln 618 this is resulte', resulte);
+                return callback(false, resulte);
+            } else {
+                return callback(true, 'No active service providers found in the database');
+            }
         } catch (error) {
-          return callback(true, error.message);
+            return callback(true, error.message);
         }
-      },
-      
-      
-      
-      
-      
-      
-      
-
+    },
       getAllCities: async (req, callback) => { // We are not using this This will be required in Customer Homepage/Landing page to select his city out of 4029
         try {
           const getAllCities = {
