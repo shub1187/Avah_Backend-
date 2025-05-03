@@ -24,7 +24,9 @@ const {
     reset_password,
     getStatistics,
     getRandomSp,
-    getGeneralStatistics
+    getGeneralStatistics,
+    rateServiceProvider,
+    getPaidServices
    
 } = require("../models/customer.models.js")
 
@@ -95,6 +97,39 @@ module.exports = {
                     error: false,
                     // result : results,
                     message: `${results.name} your profile has been updated successfully`,
+                });
+            }
+        });
+    },
+
+    rateServiceProvider: (req, res) => {
+        rateServiceProvider(req, (err, results) => {
+            if (err)
+                res.status(500).send({
+                    error: true,
+                    message: results || "Something Went wrong. Please try again later",
+                });
+            else {     
+                res.send({
+                    error: false,
+                    message: results,
+                });
+            }
+        });
+    },
+
+    getPaidServices: (req, res) => {
+        getPaidServices(req, (err, results) => {
+            if (err)
+                res.status(500).send({
+                    error: true,
+                    message: results || "Something Went wrong. Please try again later",
+                });
+            else {     
+                res.send({
+                    error: false,
+                    data : results,
+                    message : 'Data fetched successfully'
                 });
             }
         });

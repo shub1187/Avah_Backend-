@@ -23,12 +23,15 @@ const {register,
     reset_password,
     getStatistics,
     getRandomSp,
-    getGeneralStatistics
+    getGeneralStatistics,
+    rateServiceProvider,
+    getPaidServices
 
 } 
     = require("../controllers/customer.controllers.js");
 const router = require("express").Router();
 const { checkToken } = require("../middlewares/auth_validation");
+
 
 
 
@@ -53,9 +56,10 @@ router.get("/getAllRejectedCancelledAppointment",checkToken,getAllRejectedCancel
 router.post("/profileCompletionWithImage",checkToken,profile_completion_with_image) // Token required as functionality is up post login
 router.post("/resetPassword",reset_password)
 router.get("/getStatistics",checkToken,getStatistics)
-
+router.get("/getPaidServices",checkToken,getPaidServices); // For feedback module
 router.post("/createAppointment", checkToken, createAppointment);
 router.post("/cancelAppointment", checkToken, cancelAppointment);
+router.post("/rateServiceProvider",checkToken,rateServiceProvider);
 router.get("/getRandomSp",getRandomSp)
 
 //Estimate 

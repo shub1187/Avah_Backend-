@@ -71,7 +71,9 @@ const {
     getStatistics,
     getAllBrandsMultiSelect,
     updateEmployee,
-    deleteEmployee
+    deleteEmployee,
+    getServiceProviderFeedbackWithAvg,
+    searchServiceProvidersHomepage
 } = require("../models/serviceprovider.models.js");
 const {
     sign
@@ -158,6 +160,38 @@ module.exports = {
                 res.send({
                     error: false,
                     message: "success",
+                    data: results,
+                });
+        });
+    },
+
+    getServiceProviderFeedbackWithAvg: (req, res) => {
+        getServiceProviderFeedbackWithAvg(req, (err, results) => {
+            if (err)
+                res.status(500).send({
+                    error: true,
+                    message: results || "Something Went wrong. Please try again later",
+                });
+            else
+                res.send({
+                    error: false,
+                    message: "Fetched the feedback details successfully",
+                    data: results,
+                });
+        });
+    },
+
+    searchServiceProvidersHomepage: (req, res) => {
+        searchServiceProvidersHomepage(req, (err, results) => {
+            if (err)
+                res.status(500).send({
+                    error: true,
+                    message: results || "Something Went wrong. Please try again later",
+                });
+            else
+                res.send({
+                    error: false,
+                    message: "Fetched the service providers details successfully",
                     data: results,
                 });
         });

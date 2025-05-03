@@ -64,7 +64,9 @@ const {
   getStatistics,
   getAllBrandsMultiSelect,
   updateEmployee,
-  deleteEmployee   
+  deleteEmployee,
+  getServiceProviderFeedbackWithAvg,
+  searchServiceProvidersHomepage 
 } = require("../controllers/serviceproviders.controllers.js");
 const router = require("express").Router();
 const { checkToken } = require("../middlewares/auth_validation");
@@ -158,9 +160,12 @@ router.get("/getAllPendingPaymentInvoices", checkToken, getAllPendingPaymentInvo
 router.post("/recievePayment", checkToken, recievePayment);
 router.get("/getAllPaidInvoices", checkToken, getAllPaidInvoices);
 
+//Rating And Feedback
+router.get("/getServiceProviderFeedbackWithAvg", checkToken, getServiceProviderFeedbackWithAvg);
 
 //MISC 
 router.get("/getNotificationNumbers",checkToken,getNotificationNumbers)
+router.get("/searchServiceProvidersHomepage",searchServiceProvidersHomepage)
 
 
 module.exports = router;

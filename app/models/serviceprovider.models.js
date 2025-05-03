@@ -1317,7 +1317,6 @@ getAllSpareListForAutoFill: async (req, callback) => {
     const queryParams = [sp_id,false];
     if (q) { // This is for search functionality
       queryText += ' AND (spare_name ILIKE $3 OR hsn_sac ILIKE $3)';
-      console.log(queryText, "ln 1393")
       queryParams.push(`%${q}%`);
     }
     // console.log("ln 1395", queryParams, queryText)
@@ -2512,101 +2511,6 @@ getAllPaidInvoices: async (req, callback) => {
 
   getStatistics: async (req, callback) => {
     try {
-      // Query to get the total number of customers
-      const getCustomerCountQuery = {
-        text: 'SELECT COUNT(*) FROM customer_registration',
-      };
-  
-      // Query to get the total number of approved service providers
-      const getApprovedServiceProviderCountQuery = {
-        text: 'SELECT COUNT(*) FROM approved_service_providers',
-      };
-  
-      // Query to get the total number of rejected service providers
-      const getRejectedServiceProviderCountQuery = {
-        text: 'SELECT COUNT(*) FROM pending_request_sp_dealer WHERE approval_status = $1 AND is_deleted = $2 ',
-        values: [false,true]
-      };
-      // Query to get the total number of vehicles on Portal
-      const getAllVehiclesCountQuery = {
-        text: 'SELECT COUNT(*) FROM customer_vehicle_data',
-      };
-
-       // Query to get the total number of Active service providers
-         const getActiveServiceProviderCountQuery = {
-          text: 'SELECT COUNT(*) FROM approved_service_providers WHERE sp_status = $1',
-          values: ['Active']
-        };
-
-        // Query to get the total number of Inactive service providers
-           const getInactiveServiceProviderCountQuery = {
-            text: 'SELECT COUNT(*) FROM approved_service_providers WHERE sp_status = $1',
-            values: ['Inactive']
-          };
-
-           // Query to get the total number of Pending service providers
-           const getPeningServiceProviderCountQuery = {
-            text: 'SELECT COUNT(*) FROM pending_request_sp_dealer WHERE is_deleted = $1',
-            values: [false]
-          };
-  
-      // Execute queries asynchronously
-      const customerCountPromise = client.query(getCustomerCountQuery);
-      const approvedServiceProviderCountPromise = client.query(getApprovedServiceProviderCountQuery);
-      const rejectedServiceProviderCountPromise = client.query(getRejectedServiceProviderCountQuery);
-      const getAllVehiclesCountPromise = client.query(getAllVehiclesCountQuery);
-      const getActiveServiceProviderCountPromise = client.query(getActiveServiceProviderCountQuery);
-      const getInactiveServiceProviderCountPromise = client.query(getInactiveServiceProviderCountQuery);
-      const getPendingServiceProviderCountPromise = client.query(getPeningServiceProviderCountQuery)
-      // Wait for all promises to resolve
-      const [
-        customerCountResult,
-        approvedServiceProviderCountResult,
-        rejectedServiceProviderCountResult,
-        getAllVehiclesCountResult,
-        getActiveServiceProviderCountResult,
-        getInactiveServiceProviderCountResult,
-        getPendingServiceProviderCountResult
-      ] = await Promise.all([
-        customerCountPromise,
-        approvedServiceProviderCountPromise,
-        rejectedServiceProviderCountPromise,
-        getAllVehiclesCountPromise,
-        getActiveServiceProviderCountPromise,
-        getInactiveServiceProviderCountPromise,
-        getPendingServiceProviderCountPromise
-
-      ]);
-  
-      // Extract counts from results
-      const customerCount = customerCountResult.rows[0].count;
-      const approvedServiceProviderCount = approvedServiceProviderCountResult.rows[0].count;
-      const rejectedServiceProviderCount = rejectedServiceProviderCountResult.rows[0].count;
-      const getAllVehiclesCount = getAllVehiclesCountResult.rows[0].count
-      const  getActiveServiceProviderCount = getActiveServiceProviderCountResult.rows[0].count
-      const getInactiveServiceProviderCount = getInactiveServiceProviderCountResult.rows[0].count
-      const getPendingServiceProviderCount = getPendingServiceProviderCountResult.rows[0].count
-      // Prepare response object
-      const statistics = {
-        customerCount,
-        approvedServiceProviderCount,
-        rejectedServiceProviderCount,
-        getAllVehiclesCount,
-        getActiveServiceProviderCount,
-        getInactiveServiceProviderCount,
-        getPendingServiceProviderCount
-      };
-  
-      // Send response
-      return callback(false, statistics);
-    } catch (error) {
-      console.error("Error:", error);
-      return callback(true, "Unable to fetch statistics");
-    }
-  },
-
-  getStatistics: async (req, callback) => {
-    try {
         const { sp_id } = req.query;
         // Query to get the total number of customer vehicles
         const getEmployeeCountQuery = {
@@ -2628,7 +2532,7 @@ getAllPaidInvoices: async (req, callback) => {
 
         // Query to get the total number of approved appointment
         const getTotalBusinessQuery = {
-          text: 'SELECT SUM(CAST(invoice_amount AS integer)) FROM appointment WHERE sp_id = $1 AND payment_status = $2',
+          text: 'SELECT SUM(CAST(invoice_amount AS numeric)) FROM appointment WHERE sp_id = $1 AND payment_status = $2',
           values: [sp_id, 'Received']
       };
       
@@ -2695,7 +2599,7 @@ getAllPaidInvoices: async (req, callback) => {
         // Send response
         return callback(false, statistics);
     } catch (error) {
-        console.error("Error:", error);
+        console.error("Error ln 2697:", error);
         return callback(true, "Unable to fetch statistics");
     }
 },
@@ -2805,6 +2709,152 @@ deleteEmployee: async (req, callback) => { // As per new inputs
     return callback(true, error.message);
   }
 },
+
+getServiceProviderFeedbackWithAvg: async (req, callback) => {
+  try {
+    const { sp_id, q, _page, _limit } = req.query;
+    const offset = (_page - 1) * _limit;
+
+    // Base query for feedback list
+    let queryText = `
+      SELECT r.id, r.appointment_id, r.rating, r.feedback,
+             a.vehicle_number, TO_CHAR(a.service_completed_on, 'YYYY-MM-DD') AS service_completed_on,
+             c.name AS customer_name, c.mobile_number AS customer_mobile
+      FROM service_providers_ratings r
+      JOIN appointment a ON r.appointment_id::integer = a.appointment_id
+      JOIN customer_registration c ON r.customer_id::integer = c.customer_id
+      WHERE r.sp_id = $1
+    `;
+
+    // Count query
+    let countQueryText = `
+      SELECT COUNT(*)
+      FROM service_providers_ratings r
+      JOIN appointment a ON r.appointment_id::integer = a.appointment_id
+      JOIN customer_registration c ON r.customer_id::integer = c.customer_id
+      WHERE r.sp_id = $1
+    `;
+
+    const queryParams = [sp_id];
+    const countParams = [sp_id];
+
+    if (q) {
+      queryText += ` AND a.vehicle_number ILIKE $2`;
+      countQueryText += ` AND a.vehicle_number ILIKE $2`;
+      queryParams.push(`%${q}%`);
+      countParams.push(`%${q}%`);
+    }
+
+    queryText += ` ORDER BY r.id DESC LIMIT $${queryParams.length + 1} OFFSET $${queryParams.length + 2}`;
+    queryParams.push(_limit, offset);
+
+    const getFeedbackList = {
+      text: queryText,
+      values: queryParams,
+    };
+
+    const countFeedback = {
+      text: countQueryText,
+      values: countParams,
+    };
+
+    const avgQuery = {
+      text: `SELECT average_rating, total_reviews FROM approved_service_providers WHERE sp_id = $1`,
+      values: [sp_id],
+    };
+
+    const [feedbackResult, countResult, avgResult] = await Promise.all([
+      client.query(getFeedbackList),
+      client.query(countFeedback),
+      client.query(avgQuery),
+    ]);
+
+    const results = {
+      average_rating: parseFloat(avgResult.rows[0]?.average_rating || 0).toFixed(2),
+      total_reviews: parseInt(avgResult.rows[0]?.total_reviews || 0, 10),
+      results: feedbackResult.rows,
+      totalRecords: parseInt(countResult.rows[0].count, 10)
+    };
+
+    return callback(false, results);
+
+  } catch (e) {
+    console.error("Error:", e);
+    return callback(true, e.message);
+  }
+},
+
+searchServiceProvidersHomepage: async (req, callback) => {
+  try {
+      const { city, state, business_name } = req.query;
+      let query = '';
+      let values = [];
+
+      if (business_name && city && state) {
+        // Case 2: Search across India by business name
+        query = `
+            SELECT sp_id, business_name, business_contact,business_address, email, city, state, average_rating, total_reviews
+            FROM approved_service_providers
+            WHERE business_name ILIKE $1 AND city = $2 AND state = $3
+              AND sp_status = 'Active'
+              AND approval_status = true
+              AND is_deleted = false
+        `;
+        values = [business_name,city, state];
+    }
+      else if (business_name) {
+          // Case 2: Search across India by business name
+          query = `
+              SELECT sp_id, business_name, business_contact,business_address, email, city, state, average_rating, total_reviews
+              FROM approved_service_providers
+              WHERE business_name ILIKE $1
+                AND sp_status = 'Active'
+                AND approval_status = true
+                AND is_deleted = false
+          `;
+          values = [`%${business_name}%`];
+      } else if (city && state) {
+          // Case 1: Search by city and state
+          query = `
+              SELECT sp_id, business_name, business_contact,business_address, email, city, state, average_rating, total_reviews
+              FROM approved_service_providers
+              WHERE city = $1 AND state = $2
+                AND sp_status = 'Active'
+                AND approval_status = true
+                AND is_deleted = false
+          `;
+          values = [city, state];
+      } else {
+          return callback(true, 'Please provide either business_name or both city and state');
+      }
+
+      const result = await client.query(query, values);
+
+      if (result.rows.length > 0) {
+          const providers = result.rows.map(row => ({
+              sp_id: row.sp_id,
+              business_name: row.business_name,
+              mobile_number: row.business_contact,
+              address: row.business_address,
+              email: row.email,
+              city: row.city,
+              state: row.state,
+              average_rating: row.average_rating ? Number(parseFloat(row.average_rating).toFixed(1)) : 0
+          }));
+
+          return callback(false, providers);
+      } else {
+          return callback(false, []);
+      }
+  } catch (error) {
+      console.error('Error in searchServiceProviders:', error);
+      return callback(true, 'Internal server error');
+  }
+}
+
+
+
+
 
 
   

@@ -630,7 +630,6 @@ vehicleRegistration: async (req, callback) => {
       // New Code 
       getAllSpDetailsAsPerCustomerCity: async (req, callback) => {
         try {
-            // console.log('ln 571 Entered getAllSpDetailsAsPerCustomerCity');
             const queryForCities =
                 'SELECT DISTINCT city, state FROM approved_service_providers WHERE city IS NOT NULL AND state IS NOT NULL';
     
@@ -652,7 +651,7 @@ vehicleRegistration: async (req, callback) => {
     
             await Promise.all(cityStateData.map(async ({ city, state }) => {
                 const queryForServiceProviders =
-                    'SELECT sp_id, business_name, business_address, business_contact, serviced_brands FROM approved_service_providers WHERE city = $1 AND state = $2 AND sp_status <> $3';
+                    'SELECT sp_id, business_name, business_address, business_contact, serviced_brands,ROUND(average_rating::numeric, 1) AS average_rating,total_reviews  FROM approved_service_providers WHERE city = $1 AND state = $2 AND sp_status <> $3';
                 const values = [city, state, 'Inactive'];
     
                 const serviceProviderData = await new Promise((resolve, reject) => {
@@ -668,7 +667,9 @@ vehicleRegistration: async (req, callback) => {
                                 value: row.business_name,
                                 address: row.business_address,
                                 sp_mobile: row.business_contact,
-                                brands_serviced: row.serviced_brands
+                                brands_serviced: row.serviced_brands,
+                                average_rating: row.average_rating,
+                                total_reviews: row.total_reviews
                             }));
                             resolve();
                         } else {
@@ -1352,7 +1353,7 @@ estimateRejectedByCustomer:async (req, callback) => {
         // Send response
         return callback(false, statistics);
     } catch (error) {
-        console.error("Error:", error);
+        console.error("Error: ln 1355", error);
         return callback(true, "Unable to fetch statistics");
     }
 },
@@ -1361,7 +1362,7 @@ getRandomSp : async (req, callback) => {
   try {
     // Construct the query to fetch 4 random approved service providers
     const queryText = `
-      SELECT business_name,email,state,city FROM approved_service_providers
+      SELECT business_name,email,state,city,average_rating,business_contact FROM approved_service_providers
       WHERE is_deleted = $1 AND (state IS NOT NULL AND CITY IS NOT NULL)
       ORDER BY RANDOM()
       LIMIT 4;
@@ -1378,7 +1379,7 @@ getRandomSp : async (req, callback) => {
     const data = await new Promise((resolve, reject) => {
       client.query(get_all_approved_sp, (err, result) => {
         if (err) {
-          // console.log(err);
+          console.log(err);
           return callback(true, "Unable to fetch the approved service providers details");
         } else {
           const results = {
@@ -1445,8 +1446,119 @@ getGeneralStatistics: async (req, callback) => {
   }
 },
 
+rateServiceProvider: async (req, callback) => {
+  try {
+    const { appointment_id, sp_id, rating, feedback, customer_id } = req.body;
 
+    // Validate input
+    if (!appointment_id || !sp_id || !rating || !customer_id) {
+      return callback(true, "Missing required fields.");
+    }
 
+    await client.query("BEGIN"); // Start transaction
 
+    // Step 1: Update the appointment table
+    const updateAppointmentQuery = `
+      UPDATE appointment 
+      SET rating_provided = true, rating = $1, feedback = $2 
+      WHERE appointment_id = $3 AND sp_id = $4
+      RETURNING appointment_id;
+    `;
+    const updateAppointmentValues = [rating, feedback, appointment_id, sp_id];
+
+    const appointmentResult = await client.query(updateAppointmentQuery, updateAppointmentValues);
+    if (appointmentResult.rowCount === 0) {
+      await client.query("ROLLBACK");
+      return callback(true, "Appointment not found or already rated.");
+    }
+
+    // Step 2: Insert or Update Rating in service_provider_ratings
+    const upsertRatingQuery = `
+      INSERT INTO service_providers_ratings (appointment_id, sp_id, customer_id, rating, feedback)
+      VALUES ($1, $2, $3, $4, $5)
+      ON CONFLICT (appointment_id) 
+      DO UPDATE SET rating = EXCLUDED.rating, feedback = EXCLUDED.feedback;
+    `;
+    const upsertRatingValues = [appointment_id, sp_id, customer_id, rating, feedback];
+    await client.query(upsertRatingQuery, upsertRatingValues);
+
+    await client.query("COMMIT"); // Commit the transaction if everything is successful
+    return callback(false, "Rating submitted successfully.");
+  } catch (error) {
+    await client.query("ROLLBACK"); // Rollback transaction in case of an error
+    console.error("Error:", error);
+    return callback(true, "Failed to submit rating.");
+  } 
+  // finally {
+  //   client.release(); // Release the database connection back to the pool
+  // }
+},
+// This api is used on customer portal for listing the rows to give and see the feedback given
+getPaidServices : async (req, callback) => {
+  try {
+    const { customer_id, q, _page, _limit } = req.query;
+
+    if (!customer_id || !_page || !_limit) {
+      return callback(true, "Customer ID, page, and limit are required.");
+    }
+
+    const offset = (_page - 1) * _limit;
+
+    // Query to fetch paginated results
+    let queryText = `
+      SELECT  appointment_id,customer_id,sp_id,business_name,vehicle_number,invoice_amount,rating_provided,rating,feedback,invoice_collected_on
+      FROM appointment 
+      WHERE customer_id = $1 
+      AND payment_status = 'Received'
+    `;
+
+    // Query to count total records
+    let countQueryText = `
+      SELECT COUNT(*) 
+      FROM appointment 
+      WHERE customer_id = $1 
+      AND payment_status = 'Received'
+    `;
+
+    const queryParams = [customer_id];
+
+    if (q) { // Search functionality (Assuming search on 'vehicle_number')
+      queryText += ` AND vehicle_number ILIKE $${queryParams.length + 1}`;
+      countQueryText += ` AND vehicle_number ILIKE $${queryParams.length + 1}`;
+      queryParams.push(`%${q}%`);
+    }
+
+    // Adding ORDER BY, LIMIT, and OFFSET
+    queryText += ` ORDER BY appointment_id DESC LIMIT $${queryParams.length + 1} OFFSET $${queryParams.length + 2}`;
+    queryParams.push(_limit, offset);
+
+    // Preparing queries
+    const getAppointmentsQuery = {
+      text: queryText,
+      values: queryParams,
+    };
+
+    const countAppointmentsQuery = {
+      text: countQueryText,
+      values: queryParams.slice(0, -2), // Exclude LIMIT and OFFSET
+    };
+
+    // Executing queries in parallel
+    const [result, countResult] = await Promise.all([
+      client.query(getAppointmentsQuery),
+      client.query(countAppointmentsQuery),
+    ]);
+
+    // Returning the result
+    return callback(false, {
+      results: result.rows,
+      totalRecords: parseInt(countResult.rows[0].count, 10),
+    });
+
+  } catch (error) {
+    console.error("Error fetching paid appointments:", error);
+    return callback(true, "Error fetching paid appointments.");
+  }
+}
 
 }
