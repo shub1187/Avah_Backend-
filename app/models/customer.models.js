@@ -1362,7 +1362,7 @@ getRandomSp : async (req, callback) => {
   try {
     // Construct the query to fetch 4 random approved service providers
     const queryText = `
-      SELECT business_name,email,state,city,average_rating,business_contact FROM approved_service_providers
+      SELECT business_name,email,state,city,average_rating,business_contact,business_address FROM approved_service_providers
       WHERE is_deleted = $1 AND (state IS NOT NULL AND CITY IS NOT NULL)
       ORDER BY RANDOM()
       LIMIT 4;
