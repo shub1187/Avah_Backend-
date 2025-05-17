@@ -1529,7 +1529,7 @@ getPaidServices : async (req, callback) => {
     }
 
     // Adding ORDER BY, LIMIT, and OFFSET
-    queryText += ` ORDER BY appointment_id DESC LIMIT $${queryParams.length + 1} OFFSET $${queryParams.length + 2}`;
+    queryText += ` ORDER BY invoice_collected_on DESC LIMIT $${queryParams.length + 1} OFFSET $${queryParams.length + 2}`;
     queryParams.push(_limit, offset);
 
     // Preparing queries
